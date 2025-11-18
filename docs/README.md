@@ -123,7 +123,7 @@ A comprehensive, production-ready banking information system powered by cutting-
 
 ```bash
 # Clone the repository
-git clone https://github.com/yourusername/iob-maiis.git
+git clone https://github.com/harish-msl/iob-maiis.git
 cd iob-maiis
 
 # Copy environment file
@@ -628,8 +628,8 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 ## 📞 Support
 
 - **Documentation**: [docs/](docs/)
-- **Issues**: [GitHub Issues](https://github.com/yourusername/iob-maiis/issues)
-- **Discussions**: [GitHub Discussions](https://github.com/yourusername/iob-maiis/discussions)
+- **Issues**: [GitHub Issues](https://github.com/harish-msl/iob-maiis/issues)
+- **Discussions**: [GitHub Discussions](https://github.com/harish-msl/iob-maiis/discussions)
 - **Email**: support@iobmaiis.local
 
 ---
