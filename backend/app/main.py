@@ -29,7 +29,9 @@ from app.api.voice import router as voice_router
 from app.auth.router import router as auth_router
 from app.core.config import settings
 from app.core.logging import logger
+from app.core.sentry import init_sentry
 from app.db.session import Base, engine, init_db
+from app.middleware.monitoring import setup_monitoring
 
 # Prometheus metrics
 REQUEST_COUNT = Counter(
@@ -67,6 +69,25 @@ async def lifespan(app: FastAPI):
     logger.info("=" * 80)
 
     try:
+        # Initialize Sentry
+        logger.info("🔍 Initializing Sentry...")
+        sentry_dsn = getattr(settings, "SENTRY_DSN", None)
+        if sentry_dsn:
+            init_sentry(
+                dsn=sentry_dsn,
+                environment=settings.ENVIRONMENT,
+                release=getattr(settings, "SENTRY_RELEASE", "iob-maiis@1.0.0"),
+                traces_sample_rate=getattr(settings, "SENTRY_TRACES_SAMPLE_RATE", 0.1),
+                profiles_sample_rate=getattr(
+                    settings, "SENTRY_PROFILES_SAMPLE_RATE", 0.1
+                ),
+                enable_tracing=getattr(settings, "SENTRY_ENABLE_TRACING", True),
+                debug=settings.DEBUG,
+            )
+            logger.info("✅ Sentry initialized")
+        else:
+            logger.info("⚠️  Sentry DSN not configured - error tracking disabled")
+
         # Initialize database
         logger.info("📊 Initializing database...")
         async with engine.begin() as conn:
@@ -174,6 +195,16 @@ if settings.ENVIRONMENT == "production":
         TrustedHostMiddleware,
         allowed_hosts=["*.yourdomain.com", "yourdomain.com", "localhost"],
     )
+
+# ============================================
+# MONITORING SETUP
+# ============================================
+
+# Setup Prometheus monitoring (adds middleware and /metrics endpoint)
+# Note: This replaces the basic /metrics endpoint defined later
+setup_monitoring(app, app_name="iob-maiis")
+
+logger.info("✅ Prometheus monitoring middleware initialized")
 
 
 # Request ID Middleware
@@ -417,10 +448,8 @@ async def health_check():
     }
 
 
-@app.get("/metrics", tags=["📊 Monitoring"])
-async def metrics():
-    """Prometheus metrics endpoint"""
-    return Response(generate_latest(), media_type=CONTENT_TYPE_LATEST)
+# Metrics endpoint is now handled by setup_monitoring() middleware
+# The endpoint is available at /metrics with enhanced metrics collection
 
 
 @app.get("/api/info", tags=["ℹ️  Information"])

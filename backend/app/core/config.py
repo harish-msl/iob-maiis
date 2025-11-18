@@ -503,8 +503,17 @@ class Settings(BaseSettings):
     SENTRY_ENVIRONMENT: str = Field(
         default="development", description="Sentry environment"
     )
+    SENTRY_RELEASE: Optional[str] = Field(
+        default="iob-maiis@1.0.0", description="Sentry release version"
+    )
     SENTRY_TRACES_SAMPLE_RATE: float = Field(
-        default=0.1, description="Sentry traces sample rate"
+        default=0.1, description="Sentry traces sample rate (0.0-1.0)"
+    )
+    SENTRY_PROFILES_SAMPLE_RATE: float = Field(
+        default=0.1, description="Sentry profiles sample rate (0.0-1.0)"
+    )
+    SENTRY_ENABLE_TRACING: bool = Field(
+        default=True, description="Enable Sentry performance tracing"
     )
 
     # ============================================
