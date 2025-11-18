@@ -1,11 +1,11 @@
 """
-Document API Router
-Handles document upload, OCR processing, and document management
+Document Management API
+Handles document upload, OCR processing, and knowledge base ingestion
 """
 
-import base64
 import io
-from typing import Any, Dict, List, Optional
+from datetime import datetime
+from typing import List, Optional
 
 from fastapi import (
     APIRouter,
@@ -26,6 +26,7 @@ from app.models.document import Document
 from app.models.user import User
 from app.services.ocr_service import get_ocr_service
 from app.services.rag_service import get_rag_service
+from app.services.storage_service import get_storage_service
 
 router = APIRouter(prefix="/documents", tags=["documents"])
 
@@ -222,9 +223,28 @@ async def upload_document(
             f"User {current_user.id} uploading document: {file.filename} ({file_size} bytes)"
         )
 
-        # TODO: Save file to storage (S3, local disk, etc.)
-        # For now, we'll just store metadata in database
-        file_path = f"/uploads/user_{current_user.id}/{file.filename}"
+        # Upload to storage (MinIO/S3)
+        try:
+            storage_service = get_storage_service()
+            upload_result = await storage_service.upload_document(
+                file_data=content,
+                filename=file.filename,
+                user_id=current_user.id,
+                content_type=file.content_type,
+                metadata={"uploaded_at": datetime.utcnow().isoformat()},
+            )
+
+            file_path = upload_result["object_name"]
+            storage_url = upload_result["url"]
+
+            logger.info(f"File uploaded to storage: {storage_url}")
+
+        except Exception as e:
+            logger.error(f"Storage upload failed: {str(e)}")
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail=f"Storage upload failed: {str(e)}",
+            )
 
         # Create document record
         document = Document(

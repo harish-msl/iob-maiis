@@ -1,0 +1,269 @@
+# ============================================
+# IOB MAIIS - Prometheus Configuration
+# Service Discovery & Metrics Collection
+# Updated: 2025-01-17
+# ============================================
+
+global:
+  scrape_interval: 15s
+  scrape_timeout: 10s
+  evaluation_interval: 15s
+  external_labels:
+    cluster: "iob-maiis"
+    environment: "production"
+
+# Alertmanager configuration (optional)
+alerting:
+  alertmanagers:
+    - static_configs:
+        - targets:
+          # - 'alertmanager:9093'
+
+# Load rules once and periodically evaluate them
+rule_files:
+  - "/etc/prometheus/rules/*.yml"
+
+# ============================================
+# SCRAPE CONFIGURATIONS
+# ============================================
+scrape_configs:
+  # ============================================
+  # PROMETHEUS SELF-MONITORING
+  # ============================================
+  - job_name: "prometheus"
+    static_configs:
+      - targets: ["localhost:9090"]
+        labels:
+          service: "prometheus"
+          tier: "monitoring"
+
+  # ============================================
+  # BACKEND API (FastAPI)
+  # ============================================
+  - job_name: "backend-api"
+    scrape_interval: 10s
+    metrics_path: "/metrics"
+    static_configs:
+      - targets: ["backend:8000"]
+        labels:
+          service: "backend"
+          tier: "application"
+          component: "api"
+
+    # Health check
+    relabel_configs:
+      - source_labels: [__address__]
+        target_label: __param_target
+      - source_labels: [__param_target]
+        target_label: instance
+      - target_label: __address__
+        replacement: "backend:8000"
+
+  # ============================================
+  # FRONTEND (Next.js)
+  # ============================================
+  - job_name: "frontend"
+    scrape_interval: 15s
+    metrics_path: "/api/metrics"
+    static_configs:
+      - targets: ["frontend:3000"]
+        labels:
+          service: "frontend"
+          tier: "application"
+          component: "web"
+
+  # ============================================
+  # NGINX REVERSE PROXY
+  # ============================================
+  - job_name: "nginx"
+    scrape_interval: 15s
+    static_configs:
+      - targets: ["nginx-exporter:9113"]
+        labels:
+          service: "nginx"
+          tier: "infrastructure"
+          component: "proxy"
+
+  # ============================================
+  # POSTGRESQL DATABASE
+  # ============================================
+  - job_name: "postgres"
+    scrape_interval: 15s
+    static_configs:
+      - targets: ["postgres-exporter:9187"]
+        labels:
+          service: "postgres"
+          tier: "database"
+          component: "postgresql"
+
+  # ============================================
+  # REDIS CACHE
+  # ============================================
+  - job_name: "redis"
+    scrape_interval: 15s
+    static_configs:
+      - targets: ["redis-exporter:9121"]
+        labels:
+          service: "redis"
+          tier: "cache"
+          component: "redis"
+
+  # ============================================
+  # QDRANT VECTOR DATABASE
+  # ============================================
+  - job_name: "qdrant"
+    scrape_interval: 15s
+    metrics_path: "/metrics"
+    static_configs:
+      - targets: ["qdrant:6333"]
+        labels:
+          service: "qdrant"
+          tier: "database"
+          component: "vector-db"
+
+  # ============================================
+  # MINIO OBJECT STORAGE
+  # ============================================
+  - job_name: "minio"
+    scrape_interval: 30s
+    metrics_path: "/minio/v2/metrics/cluster"
+    bearer_token_file: /var/run/secrets/minio-token
+    scheme: http
+    static_configs:
+      - targets: ["minio:9000"]
+        labels:
+          service: "minio"
+          tier: "storage"
+          component: "object-storage"
+
+  # ============================================
+  # OLLAMA LLM SERVICE
+  # ============================================
+  - job_name: "ollama"
+    scrape_interval: 30s
+    metrics_path: "/metrics"
+    static_configs:
+      - targets: ["ollama:11434"]
+        labels:
+          service: "ollama"
+          tier: "ai"
+          component: "llm"
+
+  # ============================================
+  # NODE EXPORTER (System Metrics)
+  # ============================================
+  - job_name: "node-exporter"
+    scrape_interval: 15s
+    static_configs:
+      - targets: ["node-exporter:9100"]
+        labels:
+          service: "node-exporter"
+          tier: "infrastructure"
+          component: "system"
+
+  # ============================================
+  # CADVISOR (Container Metrics)
+  # ============================================
+  - job_name: "cadvisor"
+    scrape_interval: 15s
+    static_configs:
+      - targets: ["cadvisor:8080"]
+        labels:
+          service: "cadvisor"
+          tier: "infrastructure"
+          component: "containers"
+
+  # ============================================
+  # BLACKBOX EXPORTER (Endpoint Probing)
+  # ============================================
+  - job_name: "blackbox"
+    scrape_interval: 30s
+    metrics_path: "/probe"
+    params:
+      module: [http_2xx]
+    static_configs:
+      - targets:
+          - "http://backend:8000/health"
+          - "http://frontend:3000/api/health"
+          - "http://qdrant:6333/health"
+          - "http://minio:9000/minio/health/live"
+    relabel_configs:
+      - source_labels: [__address__]
+        target_label: __param_target
+      - source_labels: [__param_target]
+        target_label: instance
+      - target_label: __address__
+        replacement: "blackbox-exporter:9115"
+
+  # ============================================
+  # CUSTOM APPLICATION METRICS
+  # ============================================
+
+  # Speech Provider Metrics
+  - job_name: "speech-providers"
+    scrape_interval: 30s
+    metrics_path: "/metrics/speech"
+    static_configs:
+      - targets: ["backend:8000"]
+        labels:
+          service: "speech-providers"
+          tier: "application"
+          component: "voice"
+
+  # Storage Provider Metrics
+  - job_name: "storage-providers"
+    scrape_interval: 30s
+    metrics_path: "/metrics/storage"
+    static_configs:
+      - targets: ["backend:8000"]
+        labels:
+          service: "storage-providers"
+          tier: "application"
+          component: "storage"
+
+  # RAG Pipeline Metrics
+  - job_name: "rag-pipeline"
+    scrape_interval: 20s
+    metrics_path: "/metrics/rag"
+    static_configs:
+      - targets: ["backend:8000"]
+        labels:
+          service: "rag-pipeline"
+          tier: "application"
+          component: "ai"
+
+  # Document Processing Metrics
+  - job_name: "document-processing"
+    scrape_interval: 30s
+    metrics_path: "/metrics/documents"
+    static_configs:
+      - targets: ["backend:8000"]
+        labels:
+          service: "document-processing"
+          tier: "application"
+          component: "documents"
+# ============================================
+# REMOTE WRITE (Optional - for long-term storage)
+# ============================================
+# remote_write:
+#   - url: 'https://prometheus-remote-write-endpoint/api/v1/write'
+#     basic_auth:
+#       username: 'your-username'
+#       password: 'your-password'
+#     queue_config:
+#       capacity: 10000
+#       max_shards: 50
+#       min_shards: 1
+#       max_samples_per_send: 5000
+#       batch_send_deadline: 5s
+#       min_backoff: 30ms
+#       max_backoff: 100ms
+
+# ============================================
+# REMOTE READ (Optional)
+# ============================================
+# remote_read:
+#   - url: 'https://prometheus-remote-read-endpoint/api/v1/read'
+#     basic_auth:
+#       username: 'your-username'
+#       password: 'your-password'

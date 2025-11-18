@@ -1,0 +1,162 @@
+# ============================================
+# IOB MAIIS - Grafana Datasource Provisioning
+# Prometheus Data Source Configuration
+# Updated: 2025-01-17
+# ============================================
+
+apiVersion: 1
+
+datasources:
+  # ============================================
+  # PROMETHEUS DATASOURCE
+  # ============================================
+  - name: Prometheus
+    type: prometheus
+    access: proxy
+    url: http://prometheus:9090
+    isDefault: true
+    editable: true
+    jsonData:
+      httpMethod: POST
+      timeInterval: 15s
+      queryTimeout: 60s
+      defaultRegion: us-east-1
+      customQueryParameters: ''
+      manageAlerts: true
+      alertmanagerUid: alertmanager
+      prometheusType: Prometheus
+      prometheusVersion: 2.48.0
+      cacheLevel: High
+      incrementalQuerying: true
+      incrementalQueryOverlapWindow: 10m
+      disableRecordingRules: false
+      exemplarTraceIdDestinations:
+        - name: traceID
+          datasourceUid: tempo
+          urlDisplayLabel: View Trace
+    version: 1
+    uid: prometheus-datasource
+
+  # ============================================
+  # LOKI DATASOURCE (Optional - for logs)
+  # ============================================
+  - name: Loki
+    type: loki
+    access: proxy
+    url: http://loki:3100
+    isDefault: false
+    editable: true
+    jsonData:
+      maxLines: 1000
+      timeout: 60s
+      derivedFields:
+        - datasourceUid: tempo
+          matcherRegex: "traceID=(\\w+)"
+          name: TraceID
+          url: '$${__value.raw}'
+    version: 1
+    uid: loki-datasource
+
+  # ============================================
+  # TEMPO DATASOURCE (Optional - for traces)
+  # ============================================
+  - name: Tempo
+    type: tempo
+    access: proxy
+    url: http://tempo:3200
+    isDefault: false
+    editable: true
+    jsonData:
+      tracesToLogsV2:
+        datasourceUid: loki
+        spanStartTimeShift: '-1h'
+        spanEndTimeShift: '1h'
+        filterByTraceID: true
+        filterBySpanID: false
+        tags:
+          - key: service.name
+            value: service
+      tracesToMetrics:
+        datasourceUid: prometheus-datasource
+        spanStartTimeShift: '-1h'
+        spanEndTimeShift: '1h'
+        tags:
+          - key: service.name
+            value: service
+      serviceMap:
+        datasourceUid: prometheus-datasource
+      search:
+        hide: false
+      nodeGraph:
+        enabled: true
+      lokiSearch:
+        datasourceUid: loki-datasource
+    version: 1
+    uid: tempo-datasource
+
+  # ============================================
+  # ALERTMANAGER DATASOURCE
+  # ============================================
+  - name: Alertmanager
+    type: alertmanager
+    access: proxy
+    url: http://alertmanager:9093
+    isDefault: false
+    editable: true
+    jsonData:
+      implementation: prometheus
+      handleGrafanaManagedAlerts: true
+    version: 1
+    uid: alertmanager
+
+  # ============================================
+  # POSTGRES DATASOURCE (Direct DB access)
+  # ============================================
+  - name: PostgreSQL
+    type: postgres
+    access: proxy
+    url: postgres:5432
+    database: iob_maiis_db
+    user: postgres
+    isDefault: false
+    editable: true
+    jsonData:
+      sslmode: disable
+      maxOpenConns: 10
+      maxIdleConns: 2
+      connMaxLifetime: 14400
+      postgresVersion: 1600
+      timescaledb: false
+    secureJsonData:
+      password: postgres
+    version: 1
+    uid: postgres-datasource
+
+  # ============================================
+  # REDIS DATASOURCE (Optional)
+  # ============================================
+  - name: Redis
+    type: redis-datasource
+    access: proxy
+    url: redis://redis:6379
+    isDefault: false
+    editable: true
+    jsonData:
+      client: standalone
+      poolSize: 5
+      timeout: 10
+      pingInterval: 0
+      pipelineWindow: 0
+      tlsAuth: false
+      tlsSkipVerify: true
+    secureJsonData:
+      password: redis_secure_password_2025
+    version: 1
+    uid: redis-datasource
+
+# ============================================
+# DELETION SETTINGS
+# ============================================
+deleteDatasources:
+  - name: old-prometheus
+    orgId: 1

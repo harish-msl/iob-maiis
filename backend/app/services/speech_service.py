@@ -1,30 +1,70 @@
 """
 Speech Service
 Handles speech-to-text transcription and text-to-speech synthesis
+Uses provider architecture with fallback support for production environments
 """
 
 import io
-import tempfile
 from typing import Any, Dict, Optional
 
 from loguru import logger
 from pydub import AudioSegment
 
 from app.core.config import get_settings
+from app.services.speech_providers import (
+    PlaceholderSTTProvider,
+    PlaceholderTTSProvider,
+    SpeechProviderFactory,
+    STTProvider,
+    TTSProvider,
+)
 
 settings = get_settings()
 
 
 class SpeechService:
     """
-    Service for speech processing
-    Handles audio transcription and speech synthesis
+    Service for speech processing with provider support
+    Handles audio transcription and speech synthesis with fallback
     """
 
     def __init__(self):
         self.supported_audio_formats = [".mp3", ".wav", ".ogg", ".flac", ".m4a"]
         self.default_language = "en-US"
         self.sample_rate = 16000
+
+        # Initialize providers
+        self._init_providers()
+
+    def _init_providers(self):
+        """Initialize STT and TTS providers with fallback"""
+        try:
+            # Create primary providers
+            self.stt_provider: STTProvider = SpeechProviderFactory.create_stt_provider()
+            self.tts_provider: TTSProvider = SpeechProviderFactory.create_tts_provider()
+
+            # Create fallback providers if enabled
+            if settings.ENABLE_STT_FALLBACK:
+                self.stt_fallback: STTProvider = PlaceholderSTTProvider()
+            else:
+                self.stt_fallback = None
+
+            if settings.ENABLE_TTS_FALLBACK:
+                self.tts_fallback: TTSProvider = PlaceholderTTSProvider()
+            else:
+                self.tts_fallback = None
+
+            logger.info(
+                f"Speech service initialized: STT={settings.STT_PROVIDER}, TTS={settings.TTS_PROVIDER}"
+            )
+
+        except Exception as e:
+            logger.error(f"Failed to initialize speech providers: {str(e)}")
+            # Use placeholder providers as last resort
+            self.stt_provider = PlaceholderSTTProvider()
+            self.tts_provider = PlaceholderTTSProvider()
+            self.stt_fallback = None
+            self.tts_fallback = None
 
     async def transcribe_audio(
         self,
@@ -33,7 +73,7 @@ class SpeechService:
         format: str = "wav",
     ) -> Dict[str, Any]:
         """
-        Transcribe audio to text using speech recognition
+        Transcribe audio to text using configured STT provider
 
         Args:
             audio_data: Audio file bytes
@@ -54,70 +94,42 @@ class SpeechService:
             # Convert audio to proper format if needed
             audio_data = await self._convert_audio_format(audio_data, format)
 
-            # For this implementation, we'll use a placeholder
-            # In production, integrate with:
-            # - OpenAI Whisper API
-            # - Google Cloud Speech-to-Text
-            # - AWS Transcribe
-            # - Azure Speech Services
+            # Normalize language code (remove region if provider doesn't support it)
+            lang_code = self._normalize_language_code(language)
 
-            # Placeholder implementation
-            import speech_recognition as sr
-
-            # Create recognizer
-            recognizer = sr.Recognizer()
-
-            # Convert bytes to audio file
-            with tempfile.NamedTemporaryFile(suffix=".wav", delete=False) as temp_audio:
-                temp_audio.write(audio_data)
-                temp_audio_path = temp_audio.name
-
+            # Try primary provider
             try:
-                # Load audio file
-                with sr.AudioFile(temp_audio_path) as source:
-                    audio = recognizer.record(source)
-
-                # Perform recognition
-                text = recognizer.recognize_google(audio, language=language)
-
-                # Get audio duration
-                audio_segment = AudioSegment.from_file(
-                    io.BytesIO(audio_data), format="wav"
+                result = await self.stt_provider.transcribe(
+                    audio_data, language=lang_code, format="wav"
                 )
-                duration = len(audio_segment) / 1000.0  # Convert to seconds
-
-                result = {
-                    "text": text,
-                    "language": language,
-                    "duration": round(duration, 2),
-                    "format": format,
-                    "confidence": 0.95,  # Google doesn't provide confidence
-                    "word_count": len(text.split()),
-                }
-
                 logger.info(
-                    f"Transcription completed: {result['word_count']} words in {result['duration']}s"
+                    f"Transcription completed with primary provider: {result.get('word_count', 0)} words"
                 )
-
                 return result
 
-            finally:
-                # Clean up temp file
-                import os
+            except Exception as primary_error:
+                logger.warning(
+                    f"Primary STT provider failed: {str(primary_error)}, trying fallback"
+                )
 
-                if os.path.exists(temp_audio_path):
-                    os.remove(temp_audio_path)
+                # Try fallback if available
+                if self.stt_fallback:
+                    try:
+                        result = await self.stt_fallback.transcribe(
+                            audio_data, language=language, format="wav"
+                        )
+                        logger.info(
+                            f"Transcription completed with fallback provider: {result.get('word_count', 0)} words"
+                        )
+                        return result
+                    except Exception as fallback_error:
+                        logger.error(
+                            f"Fallback STT provider also failed: {str(fallback_error)}"
+                        )
+                        raise primary_error  # Raise original error
+                else:
+                    raise
 
-        except sr.UnknownValueError:
-            logger.warning("Speech not recognized in audio")
-            return {
-                "text": "",
-                "language": language,
-                "error": "Could not understand audio",
-            }
-        except sr.RequestError as e:
-            logger.error(f"Speech recognition service error: {str(e)}")
-            raise Exception(f"Speech recognition service unavailable: {str(e)}")
         except Exception as e:
             logger.error(f"Audio transcription failed: {str(e)}")
             raise
@@ -131,7 +143,7 @@ class SpeechService:
         format: str = "mp3",
     ) -> bytes:
         """
-        Convert text to speech
+        Convert text to speech using configured TTS provider
 
         Args:
             text: Text to synthesize
@@ -156,36 +168,81 @@ class SpeechService:
             if not text or not text.strip():
                 raise ValueError("Text cannot be empty")
 
-            # For this implementation, we'll use gTTS (Google Text-to-Speech)
-            # In production, consider:
-            # - ElevenLabs API (high quality)
-            # - Google Cloud TTS
-            # - AWS Polly
-            # - Azure Speech Services
+            # Normalize language code
+            lang_code = self._normalize_language_code(language)
 
-            from gtts import gTTS
+            # Try primary provider
+            try:
+                audio_bytes = await self.tts_provider.synthesize(
+                    text=text,
+                    language=lang_code,
+                    voice=voice,
+                    speed=speed,
+                )
+                logger.info(
+                    f"Speech synthesis completed with primary provider: {len(audio_bytes)} bytes"
+                )
 
-            # Create TTS object
-            tts = gTTS(text=text, lang=language.split("-")[0], slow=(speed < 1.0))
+                # Convert format if needed
+                if format != "mp3":
+                    audio_bytes = await self._convert_output_format(audio_bytes, format)
 
-            # Save to bytes
-            audio_buffer = io.BytesIO()
-            tts.write_to_fp(audio_buffer)
-            audio_buffer.seek(0)
+                return audio_bytes
 
-            audio_bytes = audio_buffer.getvalue()
+            except Exception as primary_error:
+                logger.warning(
+                    f"Primary TTS provider failed: {str(primary_error)}, trying fallback"
+                )
 
-            # Convert format if needed
-            if format != "mp3":
-                audio_bytes = await self._convert_output_format(audio_bytes, format)
+                # Try fallback if available
+                if self.tts_fallback:
+                    try:
+                        audio_bytes = await self.tts_fallback.synthesize(
+                            text=text,
+                            language=lang_code,
+                            voice=voice,
+                            speed=speed,
+                        )
+                        logger.info(
+                            f"Speech synthesis completed with fallback provider: {len(audio_bytes)} bytes"
+                        )
 
-            logger.info(f"Speech synthesis completed: {len(audio_bytes)} bytes")
+                        # Convert format if needed
+                        if format != "mp3":
+                            audio_bytes = await self._convert_output_format(
+                                audio_bytes, format
+                            )
 
-            return audio_bytes
+                        return audio_bytes
+
+                    except Exception as fallback_error:
+                        logger.error(
+                            f"Fallback TTS provider also failed: {str(fallback_error)}"
+                        )
+                        raise primary_error  # Raise original error
+                else:
+                    raise
 
         except Exception as e:
             logger.error(f"Speech synthesis failed: {str(e)}")
             raise
+
+    async def list_voices(self, language: Optional[str] = None) -> list:
+        """
+        List available voices from TTS provider
+
+        Args:
+            language: Optional language filter
+
+        Returns:
+            List of available voices with metadata
+        """
+        try:
+            voices = await self.tts_provider.list_voices(language)
+            return voices
+        except Exception as e:
+            logger.error(f"Failed to list voices: {str(e)}")
+            return []
 
     async def _convert_audio_format(
         self, audio_data: bytes, input_format: str
@@ -250,6 +307,21 @@ class SpeechService:
             logger.error(f"Output format conversion failed: {str(e)}")
             raise
 
+    def _normalize_language_code(self, language: str) -> str:
+        """
+        Normalize language code for provider compatibility
+
+        Args:
+            language: Language code (e.g., 'en-US', 'en', 'es-ES')
+
+        Returns:
+            Normalized language code
+        """
+        # Extract base language code (first part before hyphen)
+        if "-" in language:
+            return language.split("-")[0]
+        return language
+
     async def detect_language(self, audio_data: bytes) -> str:
         """
         Detect language in audio
@@ -261,47 +333,15 @@ class SpeechService:
             Detected language code
 
         Note:
-            This is a basic implementation using speech recognition
-            For production, use dedicated language detection services
+            Uses primary STT provider's language detection
         """
         try:
-            import speech_recognition as sr
-
-            recognizer = sr.Recognizer()
-
-            # Convert to WAV
-            audio_data = await self._convert_audio_format(audio_data, "mp3")
-
-            with tempfile.NamedTemporaryFile(suffix=".wav", delete=False) as temp_audio:
-                temp_audio.write(audio_data)
-                temp_audio_path = temp_audio.name
-
-            try:
-                with sr.AudioFile(temp_audio_path) as source:
-                    audio = recognizer.record(source)
-
-                # Try different languages
-                languages = ["en-US", "es-ES", "fr-FR", "de-DE", "it-IT"]
-
-                for lang in languages:
-                    try:
-                        recognizer.recognize_google(audio, language=lang)
-                        logger.info(f"Detected language: {lang}")
-                        return lang
-                    except sr.UnknownValueError:
-                        continue
-
-                return "en-US"  # Default fallback
-
-            finally:
-                import os
-
-                if os.path.exists(temp_audio_path):
-                    os.remove(temp_audio_path)
-
+            lang = await self.stt_provider.detect_language(audio_data)
+            logger.info(f"Detected language: {lang}")
+            return lang
         except Exception as e:
-            logger.warning(f"Language detection failed: {str(e)}")
-            return "en-US"
+            logger.warning(f"Language detection failed: {str(e)}, using default")
+            return "en"
 
     async def get_audio_info(
         self, audio_data: bytes, format: str = "wav"
@@ -382,29 +422,84 @@ class SpeechService:
             logger.error(f"Silence trimming failed: {str(e)}")
             raise
 
-    async def check_health(self) -> bool:
+    async def check_health(self) -> Dict[str, Any]:
         """
-        Check if speech service is available
+        Check if speech service and providers are available
 
         Returns:
-            True if dependencies are installed and working
+            Dict with health status of all providers
         """
+        health_status = {
+            "service": "healthy",
+            "providers": {},
+        }
+
         try:
-            # Check if required packages are available
-            import speech_recognition  # noqa: F401
-            from gtts import gTTS  # noqa: F401
+            # Check primary STT provider
+            try:
+                stt_healthy = await self.stt_provider.check_health()
+                health_status["providers"]["stt_primary"] = {
+                    "provider": settings.STT_PROVIDER,
+                    "status": "healthy" if stt_healthy else "unhealthy",
+                }
+            except Exception as e:
+                health_status["providers"]["stt_primary"] = {
+                    "provider": settings.STT_PROVIDER,
+                    "status": "error",
+                    "error": str(e),
+                }
 
-            # Try a simple synthesis
-            test_tts = gTTS(text="test", lang="en")
-            test_buffer = io.BytesIO()
-            test_tts.write_to_fp(test_buffer)
+            # Check primary TTS provider
+            try:
+                tts_healthy = await self.tts_provider.check_health()
+                health_status["providers"]["tts_primary"] = {
+                    "provider": settings.TTS_PROVIDER,
+                    "status": "healthy" if tts_healthy else "unhealthy",
+                }
+            except Exception as e:
+                health_status["providers"]["tts_primary"] = {
+                    "provider": settings.TTS_PROVIDER,
+                    "status": "error",
+                    "error": str(e),
+                }
 
-            logger.info("Speech service is healthy")
-            return True
+            # Check fallback providers if available
+            if self.stt_fallback:
+                try:
+                    fallback_healthy = await self.stt_fallback.check_health()
+                    health_status["providers"]["stt_fallback"] = {
+                        "provider": "placeholder",
+                        "status": "healthy" if fallback_healthy else "unhealthy",
+                    }
+                except Exception as e:
+                    health_status["providers"]["stt_fallback"] = {
+                        "provider": "placeholder",
+                        "status": "error",
+                        "error": str(e),
+                    }
+
+            if self.tts_fallback:
+                try:
+                    fallback_healthy = await self.tts_fallback.check_health()
+                    health_status["providers"]["tts_fallback"] = {
+                        "provider": "placeholder",
+                        "status": "healthy" if fallback_healthy else "unhealthy",
+                    }
+                except Exception as e:
+                    health_status["providers"]["tts_fallback"] = {
+                        "provider": "placeholder",
+                        "status": "error",
+                        "error": str(e),
+                    }
+
+            logger.info("Speech service health check completed")
+            return health_status
 
         except Exception as e:
             logger.error(f"Speech service health check failed: {str(e)}")
-            return False
+            health_status["service"] = "unhealthy"
+            health_status["error"] = str(e)
+            return health_status
 
 
 # Global instance

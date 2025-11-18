@@ -256,6 +256,77 @@ class Settings(BaseSettings):
     )
 
     # ============================================
+    # STORAGE SETTINGS (MinIO / S3)
+    # ============================================
+    # Storage provider selection
+    STORAGE_PROVIDER: str = Field(
+        default="minio",
+        description="Storage provider: minio, s3, local",
+    )
+
+    # MinIO Settings (S3-compatible object storage)
+    MINIO_ENDPOINT: str = Field(
+        default="minio:9000", description="MinIO server endpoint"
+    )
+    MINIO_ACCESS_KEY: str = Field(default="minioadmin", description="MinIO access key")
+    MINIO_SECRET_KEY: str = Field(default="minioadmin", description="MinIO secret key")
+    MINIO_SECURE: bool = Field(
+        default=False, description="Use HTTPS for MinIO connections"
+    )
+    MINIO_BUCKET_DOCUMENTS: str = Field(
+        default="documents", description="MinIO bucket for documents"
+    )
+    MINIO_BUCKET_AUDIO: str = Field(
+        default="audio", description="MinIO bucket for audio files"
+    )
+    MINIO_BUCKET_IMAGES: str = Field(
+        default="images", description="MinIO bucket for images"
+    )
+    MINIO_REGION: str = Field(
+        default="us-east-1", description="MinIO region (for compatibility)"
+    )
+
+    # AWS S3 Settings (for production)
+    S3_ENDPOINT: Optional[str] = Field(
+        default=None, description="S3 endpoint URL (leave empty for AWS S3)"
+    )
+    S3_ACCESS_KEY: Optional[str] = Field(
+        default=None, description="AWS S3 access key ID"
+    )
+    S3_SECRET_KEY: Optional[str] = Field(
+        default=None, description="AWS S3 secret access key"
+    )
+    S3_REGION: str = Field(default="us-east-1", description="AWS S3 region")
+    S3_BUCKET: str = Field(default="iob-maiis", description="S3 bucket name")
+    S3_BUCKET_DOCUMENTS: str = Field(
+        default="documents", description="S3 prefix/folder for documents"
+    )
+    S3_BUCKET_AUDIO: str = Field(
+        default="audio", description="S3 prefix/folder for audio files"
+    )
+    S3_BUCKET_IMAGES: str = Field(
+        default="images", description="S3 prefix/folder for images"
+    )
+    S3_USE_SSL: bool = Field(default=True, description="Use SSL for S3 connections")
+    S3_SIGNATURE_VERSION: str = Field(
+        default="s3v4", description="S3 signature version"
+    )
+
+    # Storage optimization
+    STORAGE_PRESIGNED_URL_EXPIRY: int = Field(
+        default=3600, description="Presigned URL expiration in seconds (1 hour)"
+    )
+    STORAGE_MAX_MULTIPART_SIZE: int = Field(
+        default=104857600, description="Max size for multipart upload (100MB)"
+    )
+    ENABLE_STORAGE_ENCRYPTION: bool = Field(
+        default=True, description="Enable server-side encryption for stored files"
+    )
+    STORAGE_RETENTION_DAYS: int = Field(
+        default=365, description="File retention period in days (0 = forever)"
+    )
+
+    # ============================================
     # BANKING SETTINGS
     # ============================================
     MAX_TRANSACTION_AMOUNT: float = Field(
@@ -322,6 +393,81 @@ class Settings(BaseSettings):
     )
     SPEECH_MAX_DURATION: int = Field(
         default=300, description="Max speech duration in seconds"
+    )
+
+    # ============================================
+    # SPEECH/TTS PROVIDER SETTINGS
+    # ============================================
+    # Provider Selection
+    STT_PROVIDER: str = Field(
+        default="openai",
+        description="Speech-to-Text provider: openai, google, azure, local, placeholder",
+    )
+    TTS_PROVIDER: str = Field(
+        default="elevenlabs",
+        description="Text-to-Speech provider: elevenlabs, openai, google, azure, local, placeholder",
+    )
+
+    # OpenAI Whisper Settings
+    OPENAI_WHISPER_MODEL: str = Field(
+        default="whisper-1", description="OpenAI Whisper model version"
+    )
+    OPENAI_WHISPER_TIMEOUT: int = Field(
+        default=30, description="OpenAI Whisper API timeout in seconds"
+    )
+    OPENAI_WHISPER_MAX_RETRIES: int = Field(
+        default=3, description="OpenAI Whisper API max retries"
+    )
+
+    # ElevenLabs Settings
+    ELEVENLABS_API_KEY: Optional[str] = Field(
+        default=None, description="ElevenLabs API key for TTS"
+    )
+    ELEVENLABS_VOICE_ID: str = Field(
+        default="21m00Tcm4TlvDq8ikWAM",
+        description="ElevenLabs default voice ID (Rachel)",
+    )
+    ELEVENLABS_MODEL_ID: str = Field(
+        default="eleven_monolingual_v1", description="ElevenLabs TTS model ID"
+    )
+    ELEVENLABS_STABILITY: float = Field(
+        default=0.5, ge=0.0, le=1.0, description="ElevenLabs voice stability (0.0-1.0)"
+    )
+    ELEVENLABS_SIMILARITY_BOOST: float = Field(
+        default=0.75,
+        ge=0.0,
+        le=1.0,
+        description="ElevenLabs similarity boost (0.0-1.0)",
+    )
+    ELEVENLABS_TIMEOUT: int = Field(
+        default=30, description="ElevenLabs API timeout in seconds"
+    )
+
+    # Google Cloud Speech Settings
+    GOOGLE_CLOUD_STT_MODEL: str = Field(
+        default="latest_long", description="Google Cloud STT model"
+    )
+    GOOGLE_CLOUD_TTS_VOICE: str = Field(
+        default="en-US-Neural2-C", description="Google Cloud TTS voice name"
+    )
+
+    # Azure Speech Settings
+    AZURE_SPEECH_KEY: Optional[str] = Field(
+        default=None, description="Azure Speech API key"
+    )
+    AZURE_SPEECH_REGION: str = Field(
+        default="eastus", description="Azure Speech service region"
+    )
+    AZURE_TTS_VOICE: str = Field(
+        default="en-US-AriaNeural", description="Azure TTS voice name"
+    )
+
+    # Local/Fallback Settings
+    ENABLE_STT_FALLBACK: bool = Field(
+        default=True, description="Enable fallback to local STT if API fails"
+    )
+    ENABLE_TTS_FALLBACK: bool = Field(
+        default=True, description="Enable fallback to local TTS if API fails"
     )
 
     # ============================================

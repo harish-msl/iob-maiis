@@ -1,0 +1,433 @@
+# ============================================
+# IOB MAIIS - Prometheus Alert Rules
+# Service Health & Performance Monitoring
+# Updated: 2025-01-17
+# ============================================
+
+groups:
+  # ============================================
+  # INFRASTRUCTURE ALERTS
+  # ============================================
+  - name: infrastructure
+    interval: 30s
+    rules:
+      # Service Down Alerts
+      - alert: ServiceDown
+        expr: up == 0
+        for: 2m
+        labels:
+          severity: critical
+          category: infrastructure
+        annotations:
+          summary: "Service {{ $labels.job }} is down"
+          description: "{{ $labels.job }} on {{ $labels.instance }} has been down for more than 2 minutes."
+
+      # High CPU Usage
+      - alert: HighCPUUsage
+        expr: |
+          100 - (avg by (instance) (rate(node_cpu_seconds_total{mode="idle"}[5m])) * 100) > 80
+        for: 5m
+        labels:
+          severity: warning
+          category: infrastructure
+        annotations:
+          summary: "High CPU usage on {{ $labels.instance }}"
+          description: "CPU usage is above 80% (current: {{ $value }}%) for more than 5 minutes."
+
+      # High Memory Usage
+      - alert: HighMemoryUsage
+        expr: |
+          (1 - (node_memory_MemAvailable_bytes / node_memory_MemTotal_bytes)) * 100 > 85
+        for: 5m
+        labels:
+          severity: warning
+          category: infrastructure
+        annotations:
+          summary: "High memory usage on {{ $labels.instance }}"
+          description: "Memory usage is above 85% (current: {{ $value }}%) for more than 5 minutes."
+
+      # Disk Space Low
+      - alert: DiskSpaceLow
+        expr: |
+          (1 - (node_filesystem_avail_bytes / node_filesystem_size_bytes)) * 100 > 85
+        for: 5m
+        labels:
+          severity: warning
+          category: infrastructure
+        annotations:
+          summary: "Disk space low on {{ $labels.instance }}"
+          description: "Disk {{ $labels.mountpoint }} is {{ $value }}% full."
+
+      # Disk Space Critical
+      - alert: DiskSpaceCritical
+        expr: |
+          (1 - (node_filesystem_avail_bytes / node_filesystem_size_bytes)) * 100 > 95
+        for: 2m
+        labels:
+          severity: critical
+          category: infrastructure
+        annotations:
+          summary: "Disk space critical on {{ $labels.instance }}"
+          description: "Disk {{ $labels.mountpoint }} is {{ $value }}% full. Immediate action required!"
+
+  # ============================================
+  # BACKEND API ALERTS
+  # ============================================
+  - name: backend_api
+    interval: 30s
+    rules:
+      # High API Error Rate
+      - alert: HighAPIErrorRate
+        expr: |
+          (sum(rate(http_requests_total{status=~"5.."}[5m])) by (service) /
+           sum(rate(http_requests_total[5m])) by (service)) * 100 > 5
+        for: 5m
+        labels:
+          severity: critical
+          category: application
+        annotations:
+          summary: "High API error rate on {{ $labels.service }}"
+          description: "API error rate is {{ $value }}% (threshold: 5%) for more than 5 minutes."
+
+      # Slow API Response Time
+      - alert: SlowAPIResponseTime
+        expr: |
+          histogram_quantile(0.95,
+            sum(rate(http_request_duration_seconds_bucket[5m])) by (le, service)
+          ) > 2
+        for: 5m
+        labels:
+          severity: warning
+          category: application
+        annotations:
+          summary: "Slow API response time on {{ $labels.service }}"
+          description: "95th percentile response time is {{ $value }}s (threshold: 2s)."
+
+      # High Request Rate
+      - alert: HighRequestRate
+        expr: |
+          sum(rate(http_requests_total[5m])) by (service) > 1000
+        for: 5m
+        labels:
+          severity: warning
+          category: application
+        annotations:
+          summary: "High request rate on {{ $labels.service }}"
+          description: "Request rate is {{ $value }} req/s (threshold: 1000 req/s)."
+
+      # Backend Health Check Failed
+      - alert: BackendHealthCheckFailed
+        expr: |
+          probe_success{job="blackbox",instance=~".*backend.*"} == 0
+        for: 2m
+        labels:
+          severity: critical
+          category: application
+        annotations:
+          summary: "Backend health check failed"
+          description: "Backend service {{ $labels.instance }} health check has been failing for 2 minutes."
+
+  # ============================================
+  # DATABASE ALERTS
+  # ============================================
+  - name: database
+    interval: 30s
+    rules:
+      # PostgreSQL Down
+      - alert: PostgreSQLDown
+        expr: pg_up == 0
+        for: 2m
+        labels:
+          severity: critical
+          category: database
+        annotations:
+          summary: "PostgreSQL is down"
+          description: "PostgreSQL database has been down for more than 2 minutes."
+
+      # High Database Connections
+      - alert: HighDatabaseConnections
+        expr: |
+          (pg_stat_database_numbackends / pg_settings_max_connections) * 100 > 80
+        for: 5m
+        labels:
+          severity: warning
+          category: database
+        annotations:
+          summary: "High database connections"
+          description: "Database connection usage is {{ $value }}% (threshold: 80%)."
+
+      # Database Replication Lag
+      - alert: DatabaseReplicationLag
+        expr: |
+          pg_replication_lag > 30
+        for: 5m
+        labels:
+          severity: warning
+          category: database
+        annotations:
+          summary: "Database replication lag detected"
+          description: "Replication lag is {{ $value }} seconds (threshold: 30s)."
+
+      # Qdrant Vector DB Down
+      - alert: QdrantDown
+        expr: |
+          probe_success{job="blackbox",instance=~".*qdrant.*"} == 0
+        for: 2m
+        labels:
+          severity: critical
+          category: database
+        annotations:
+          summary: "Qdrant vector database is down"
+          description: "Qdrant has been unreachable for more than 2 minutes."
+
+  # ============================================
+  # REDIS CACHE ALERTS
+  # ============================================
+  - name: redis
+    interval: 30s
+    rules:
+      # Redis Down
+      - alert: RedisDown
+        expr: redis_up == 0
+        for: 2m
+        labels:
+          severity: critical
+          category: cache
+        annotations:
+          summary: "Redis is down"
+          description: "Redis cache has been down for more than 2 minutes."
+
+      # High Redis Memory Usage
+      - alert: HighRedisMemoryUsage
+        expr: |
+          (redis_memory_used_bytes / redis_memory_max_bytes) * 100 > 85
+        for: 5m
+        labels:
+          severity: warning
+          category: cache
+        annotations:
+          summary: "High Redis memory usage"
+          description: "Redis memory usage is {{ $value }}% (threshold: 85%)."
+
+      # High Redis Connection Count
+      - alert: HighRedisConnections
+        expr: redis_connected_clients > 100
+        for: 5m
+        labels:
+          severity: warning
+          category: cache
+        annotations:
+          summary: "High Redis connection count"
+          description: "Redis has {{ $value }} connected clients (threshold: 100)."
+
+  # ============================================
+  # STORAGE ALERTS
+  # ============================================
+  - name: storage
+    interval: 30s
+    rules:
+      # MinIO Down
+      - alert: MinIODown
+        expr: |
+          probe_success{job="blackbox",instance=~".*minio.*"} == 0
+        for: 2m
+        labels:
+          severity: critical
+          category: storage
+        annotations:
+          summary: "MinIO object storage is down"
+          description: "MinIO has been unreachable for more than 2 minutes."
+
+      # High Storage Usage
+      - alert: HighStorageUsage
+        expr: |
+          (minio_bucket_usage_total_bytes / minio_bucket_quota_total_bytes) * 100 > 80
+        for: 10m
+        labels:
+          severity: warning
+          category: storage
+        annotations:
+          summary: "High storage usage in bucket {{ $labels.bucket }}"
+          description: "Bucket usage is {{ $value }}% (threshold: 80%)."
+
+      # Storage Upload Failures
+      - alert: StorageUploadFailures
+        expr: |
+          rate(storage_upload_errors_total[5m]) > 0.1
+        for: 5m
+        labels:
+          severity: warning
+          category: storage
+        annotations:
+          summary: "High storage upload failure rate"
+          description: "Storage upload failures: {{ $value }} errors/s."
+
+  # ============================================
+  # AI/LLM ALERTS
+  # ============================================
+  - name: ai_services
+    interval: 30s
+    rules:
+      # Ollama Service Down
+      - alert: OllamaDown
+        expr: |
+          probe_success{job="blackbox",instance=~".*ollama.*"} == 0
+        for: 3m
+        labels:
+          severity: critical
+          category: ai
+        annotations:
+          summary: "Ollama LLM service is down"
+          description: "Ollama has been unreachable for more than 3 minutes."
+
+      # High LLM Response Time
+      - alert: SlowLLMResponseTime
+        expr: |
+          histogram_quantile(0.95,
+            sum(rate(llm_request_duration_seconds_bucket[5m])) by (le)
+          ) > 30
+        for: 5m
+        labels:
+          severity: warning
+          category: ai
+        annotations:
+          summary: "Slow LLM response time"
+          description: "95th percentile LLM response time is {{ $value }}s (threshold: 30s)."
+
+      # Speech Provider Fallback Active
+      - alert: SpeechProviderFallbackActive
+        expr: |
+          rate(speech_provider_fallback_total[5m]) > 0.1
+        for: 10m
+        labels:
+          severity: warning
+          category: ai
+        annotations:
+          summary: "Speech provider using fallback"
+          description: "Primary speech provider is failing, fallback active. Rate: {{ $value }} fallbacks/s."
+
+      # High RAG Pipeline Errors
+      - alert: HighRAGPipelineErrors
+        expr: |
+          rate(rag_pipeline_errors_total[5m]) > 0.05
+        for: 5m
+        labels:
+          severity: warning
+          category: ai
+        annotations:
+          summary: "High RAG pipeline error rate"
+          description: "RAG pipeline errors: {{ $value }} errors/s (threshold: 0.05/s)."
+
+  # ============================================
+  # NGINX / PROXY ALERTS
+  # ============================================
+  - name: nginx
+    interval: 30s
+    rules:
+      # High Nginx Error Rate
+      - alert: HighNginxErrorRate
+        expr: |
+          rate(nginx_http_requests_total{status=~"5.."}[5m]) > 10
+        for: 5m
+        labels:
+          severity: warning
+          category: infrastructure
+        annotations:
+          summary: "High Nginx error rate"
+          description: "Nginx 5xx error rate: {{ $value }} errors/s."
+
+      # Nginx Rate Limiting Active
+      - alert: NginxRateLimitingActive
+        expr: |
+          rate(nginx_http_limit_req_status_total{status="rejected"}[5m]) > 1
+        for: 5m
+        labels:
+          severity: info
+          category: infrastructure
+        annotations:
+          summary: "Nginx rate limiting active"
+          description: "Rate limiting is rejecting {{ $value }} requests/s."
+
+  # ============================================
+  # SECURITY ALERTS
+  # ============================================
+  - name: security
+    interval: 30s
+    rules:
+      # High Authentication Failure Rate
+      - alert: HighAuthenticationFailureRate
+        expr: |
+          rate(auth_failures_total[5m]) > 5
+        for: 5m
+        labels:
+          severity: warning
+          category: security
+        annotations:
+          summary: "High authentication failure rate"
+          description: "Authentication failures: {{ $value }} failures/s (threshold: 5/s)."
+
+      # Suspicious Upload Activity
+      - alert: SuspiciousUploadActivity
+        expr: |
+          rate(file_upload_total[5m]) > 100
+        for: 5m
+        labels:
+          severity: warning
+          category: security
+        annotations:
+          summary: "Suspicious upload activity detected"
+          description: "Unusual upload rate: {{ $value }} uploads/s (threshold: 100/s)."
+
+      # Certificate Expiring Soon
+      - alert: SSLCertificateExpiringSoon
+        expr: |
+          (ssl_certificate_expiry_seconds - time()) / 86400 < 30
+        for: 1h
+        labels:
+          severity: warning
+          category: security
+        annotations:
+          summary: "SSL certificate expiring soon"
+          description: "SSL certificate for {{ $labels.domain }} expires in {{ $value }} days."
+
+      # Certificate Expiring Critical
+      - alert: SSLCertificateExpiringCritical
+        expr: |
+          (ssl_certificate_expiry_seconds - time()) / 86400 < 7
+        for: 1h
+        labels:
+          severity: critical
+          category: security
+        annotations:
+          summary: "SSL certificate expiring critical"
+          description: "SSL certificate for {{ $labels.domain }} expires in {{ $value }} days! Immediate renewal required."
+
+  # ============================================
+  # COST & QUOTA ALERTS
+  # ============================================
+  - name: cost_quota
+    interval: 1h
+    rules:
+      # High External API Usage
+      - alert: HighExternalAPIUsage
+        expr: |
+          rate(external_api_requests_total{provider=~"openai|elevenlabs"}[1h]) > 1000
+        for: 1h
+        labels:
+          severity: warning
+          category: cost
+        annotations:
+          summary: "High external API usage for {{ $labels.provider }}"
+          description: "API usage: {{ $value }} requests/hour. Check costs."
+
+      # Storage Quota Warning
+      - alert: StorageQuotaWarning
+        expr: |
+          (sum(minio_bucket_usage_total_bytes) / (100 * 1024 * 1024 * 1024)) * 100 > 80
+        for: 1h
+        labels:
+          severity: warning
+          category: cost
+        annotations:
+          summary: "Storage quota warning"
+          description: "Total storage usage is {{ $value }}% of 100GB quota."

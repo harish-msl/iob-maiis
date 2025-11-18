@@ -1,0 +1,92 @@
+# ============================================
+# IOB MAIIS - Grafana Dashboard Provisioning
+# Auto-load dashboards from filesystem
+# Updated: 2025-01-17
+# ============================================
+
+apiVersion: 1
+
+providers:
+  # ============================================
+  # IOB MAIIS DASHBOARDS
+  # ============================================
+  - name: 'IOB MAIIS Dashboards'
+    orgId: 1
+    folder: 'IOB MAIIS'
+    type: file
+    disableDeletion: false
+    updateIntervalSeconds: 30
+    allowUiUpdates: true
+    options:
+      path: /etc/grafana/provisioning/dashboards/json
+      foldersFromFilesStructure: true
+
+  # ============================================
+  # SYSTEM DASHBOARDS
+  # ============================================
+  - name: 'System Monitoring'
+    orgId: 1
+    folder: 'System'
+    type: file
+    disableDeletion: false
+    updateIntervalSeconds: 30
+    allowUiUpdates: true
+    options:
+      path: /etc/grafana/provisioning/dashboards/system
+      foldersFromFilesStructure: false
+
+  # ============================================
+  # APPLICATION DASHBOARDS
+  # ============================================
+  - name: 'Application Monitoring'
+    orgId: 1
+    folder: 'Applications'
+    type: file
+    disableDeletion: false
+    updateIntervalSeconds: 30
+    allowUiUpdates: true
+    options:
+      path: /etc/grafana/provisioning/dashboards/applications
+      foldersFromFilesStructure: false
+
+  # ============================================
+  # AI/ML DASHBOARDS
+  # ============================================
+  - name: 'AI & ML Services'
+    orgId: 1
+    folder: 'AI Services'
+    type: file
+    disableDeletion: false
+    updateIntervalSeconds: 30
+    allowUiUpdates: true
+    options:
+      path: /etc/grafana/provisioning/dashboards/ai
+      foldersFromFilesStructure: false
+
+  # ============================================
+  # INFRASTRUCTURE DASHBOARDS
+  # ============================================
+  - name: 'Infrastructure'
+    orgId: 1
+    folder: 'Infrastructure'
+    type: file
+    disableDeletion: false
+    updateIntervalSeconds: 30
+    allowUiUpdates: true
+    options:
+      path: /etc/grafana/provisioning/dashboards/infrastructure
+      foldersFromFilesStructure: false
+
+  # ============================================
+  # SECURITY DASHBOARDS
+  # ============================================
+  - name: 'Security & Access'
+    orgId: 1
+    folder: 'Security'
+    type: file
+    disableDeletion: false
+    updateIntervalSeconds: 30
+    allowUiUpdates: true
+    options:
+      path: /etc/grafana/provisioning/dashboards/security
+      foldersFromFilesStructure: false
