@@ -213,8 +213,7 @@ class UserResponse(BaseModel):
     phone: Optional[str] = Field(None, description="Phone number")
     role: str = Field(..., description="User role")
     is_active: bool = Field(..., description="Account active status")
-    is_superuser: bool = Field(..., description="Superuser status")
-    email_verified: bool = Field(..., description="Email verification status")
+    is_verified: bool = Field(..., description="Email verification status")
     created_at: datetime = Field(..., description="Account creation timestamp")
     updated_at: datetime = Field(..., description="Last update timestamp")
 
@@ -229,8 +228,7 @@ class UserResponse(BaseModel):
                     "phone": "+1234567890",
                     "role": "customer",
                     "is_active": True,
-                    "is_superuser": False,
-                    "email_verified": True,
+                    "is_verified": True,
                     "created_at": "2024-01-15T10:30:00Z",
                     "updated_at": "2024-01-15T10:30:00Z",
                 }
@@ -259,8 +257,7 @@ class LoginResponse(BaseModel):
                         "phone": "+1234567890",
                         "role": "customer",
                         "is_active": True,
-                        "is_superuser": False,
-                        "email_verified": True,
+                        "is_verified": True,
                         "created_at": "2024-01-15T10:30:00Z",
                         "updated_at": "2024-01-15T10:30:00Z",
                     },
@@ -350,8 +347,7 @@ class UserCreate(BaseModel):
     phone: Optional[str] = None
     role: str = "customer"
     is_active: bool = True
-    is_superuser: bool = False
-    email_verified: bool = False
+    is_verified: bool = False
 
 
 class UserUpdate(BaseModel):
@@ -362,8 +358,7 @@ class UserUpdate(BaseModel):
     phone: Optional[str] = None
     role: Optional[str] = None
     is_active: Optional[bool] = None
-    is_superuser: Optional[bool] = None
-    email_verified: Optional[bool] = None
+    is_verified: Optional[bool] = None
 
 
 class UserInDB(UserResponse):

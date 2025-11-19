@@ -1,23 +1,22 @@
-'use client';
+"use client";
 
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo } from "react";
 import {
   ArrowUpRight,
   ArrowDownLeft,
-  Filter,
   Search,
   Download,
   Calendar,
   ChevronLeft,
   ChevronRight,
-} from 'lucide-react';
-import { Card } from '@/components/ui/Card';
-import { Input } from '@/components/ui/Input';
-import { Button } from '@/components/ui/Button';
-import { Badge } from '@/components/ui/Badge';
-import { cn } from '@/lib/utils/cn';
-import { formatCurrency, formatDate } from '@/lib/utils/format';
-import type { Transaction } from '@/lib/types/banking';
+} from "lucide-react";
+import { Card } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { cn } from "@/lib/utils/cn";
+import { formatCurrency, formatDate } from "@/lib/utils/format";
+import type { Transaction } from "@/lib/types/banking";
 
 interface TransactionTableProps {
   transactions: Transaction[];
@@ -26,20 +25,19 @@ interface TransactionTableProps {
   className?: string;
 }
 
-type TransactionType = 'all' | 'deposit' | 'withdrawal' | 'transfer';
-type SortField = 'date' | 'amount' | 'description';
-type SortOrder = 'asc' | 'desc';
+type TransactionType = "all" | "deposit" | "withdrawal" | "transfer";
+type SortField = "date" | "amount" | "description";
+type SortOrder = "asc" | "desc";
 
 export function TransactionTable({
   transactions,
-  accountId,
   loading = false,
   className,
 }: TransactionTableProps) {
-  const [searchQuery, setSearchQuery] = useState('');
-  const [typeFilter, setTypeFilter] = useState<TransactionType>('all');
-  const [sortField, setSortField] = useState<SortField>('date');
-  const [sortOrder, setSortOrder] = useState<SortOrder>('desc');
+  const [searchQuery, setSearchQuery] = useState("");
+  const [typeFilter, setTypeFilter] = useState<TransactionType>("all");
+  const [sortField, setSortField] = useState<SortField>("date");
+  const [sortOrder, setSortOrder] = useState<SortOrder>("desc");
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 10;
 
@@ -48,10 +46,8 @@ export function TransactionTable({
     let filtered = [...transactions];
 
     // Apply type filter
-    if (typeFilter !== 'all') {
-      filtered = filtered.filter(
-        (tx) => tx.transaction_type.toLowerCase() === typeFilter
-      );
+    if (typeFilter !== "all") {
+      filtered = filtered.filter((tx) => tx.type.toLowerCase() === typeFilter);
     }
 
     // Apply search filter
@@ -60,8 +56,8 @@ export function TransactionTable({
       filtered = filtered.filter(
         (tx) =>
           tx.description?.toLowerCase().includes(query) ||
-          tx.transaction_id?.toLowerCase().includes(query) ||
-          tx.reference_number?.toLowerCase().includes(query)
+          tx.id?.toLowerCase().includes(query) ||
+          tx.reference_number?.toLowerCase().includes(query),
       );
     }
 
@@ -70,20 +66,19 @@ export function TransactionTable({
       let comparison = 0;
 
       switch (sortField) {
-        case 'date':
+        case "date":
           comparison =
-            new Date(a.transaction_date).getTime() -
-            new Date(b.transaction_date).getTime();
+            new Date(a.created_at).getTime() - new Date(b.created_at).getTime();
           break;
-        case 'amount':
+        case "amount":
           comparison = a.amount - b.amount;
           break;
-        case 'description':
-          comparison = (a.description || '').localeCompare(b.description || '');
+        case "description":
+          comparison = (a.description || "").localeCompare(b.description || "");
           break;
       }
 
-      return sortOrder === 'asc' ? comparison : -comparison;
+      return sortOrder === "asc" ? comparison : -comparison;
     });
 
     return filtered;
@@ -93,26 +88,29 @@ export function TransactionTable({
   const totalPages = Math.ceil(filteredTransactions.length / itemsPerPage);
   const startIndex = (currentPage - 1) * itemsPerPage;
   const endIndex = startIndex + itemsPerPage;
-  const paginatedTransactions = filteredTransactions.slice(startIndex, endIndex);
+  const paginatedTransactions = filteredTransactions.slice(
+    startIndex,
+    endIndex,
+  );
 
   const handleSort = (field: SortField) => {
     if (sortField === field) {
-      setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc');
+      setSortOrder(sortOrder === "asc" ? "desc" : "asc");
     } else {
       setSortField(field);
-      setSortOrder('desc');
+      setSortOrder("desc");
     }
   };
 
   const getTransactionIcon = (type: string) => {
     switch (type.toLowerCase()) {
-      case 'deposit':
-      case 'credit':
+      case "deposit":
+      case "credit":
         return <ArrowDownLeft className="h-4 w-4 text-green-500" />;
-      case 'withdrawal':
-      case 'debit':
+      case "withdrawal":
+      case "debit":
         return <ArrowUpRight className="h-4 w-4 text-red-500" />;
-      case 'transfer':
+      case "transfer":
         return <ArrowUpRight className="h-4 w-4 text-blue-500" />;
       default:
         return <ArrowUpRight className="h-4 w-4 text-gray-500" />;
@@ -121,55 +119,66 @@ export function TransactionTable({
 
   const getTransactionColor = (type: string) => {
     switch (type.toLowerCase()) {
-      case 'deposit':
-      case 'credit':
-        return 'text-green-600 dark:text-green-400';
-      case 'withdrawal':
-      case 'debit':
-        return 'text-red-600 dark:text-red-400';
-      case 'transfer':
-        return 'text-blue-600 dark:text-blue-400';
+      case "deposit":
+      case "credit":
+        return "text-green-600 dark:text-green-400";
+      case "withdrawal":
+      case "debit":
+        return "text-red-600 dark:text-red-400";
+      case "transfer":
+        return "text-blue-600 dark:text-blue-400";
       default:
-        return 'text-foreground';
+        return "text-foreground";
     }
   };
 
   const getStatusBadge = (status: string) => {
     switch (status.toLowerCase()) {
-      case 'completed':
+      case "completed":
         return <Badge variant="default">Completed</Badge>;
-      case 'pending':
+      case "pending":
         return <Badge variant="secondary">Pending</Badge>;
-      case 'failed':
-        return <Badge variant="outline" className="border-red-500 text-red-500">Failed</Badge>;
+      case "failed":
+        return (
+          <Badge variant="outline" className="border-red-500 text-red-500">
+            Failed
+          </Badge>
+        );
       default:
         return <Badge variant="outline">{status}</Badge>;
     }
   };
 
   const exportToCSV = () => {
-    const headers = ['Date', 'Description', 'Type', 'Amount', 'Status', 'Reference'];
+    const headers = [
+      "Date",
+      "Description",
+      "Type",
+      "Amount",
+      "Status",
+      "Reference",
+    ];
     const rows = filteredTransactions.map((tx) => [
-      formatDate(tx.transaction_date),
-      tx.description || '',
-      tx.transaction_type,
+      formatDate(tx.created_at),
+      tx.description || "",
+      tx.type,
       tx.amount.toString(),
       tx.status,
-      tx.reference_number || '',
+      tx.reference_number || "",
     ]);
 
-    const csv = [headers, ...rows].map((row) => row.join(',')).join('\n');
-    const blob = new Blob([csv], { type: 'text/csv' });
+    const csv = [headers, ...rows].map((row) => row.join(",")).join("\n");
+    const blob = new Blob([csv], { type: "text/csv" });
     const url = window.URL.createObjectURL(blob);
-    const a = document.createElement('a');
+    const a = document.createElement("a");
     a.href = url;
-    a.download = `transactions-${new Date().toISOString().split('T')[0]}.csv`;
+    a.download = `transactions-${new Date().toISOString().split("T")[0]}.csv`;
     a.click();
   };
 
   if (loading) {
     return (
-      <Card className={cn('p-6', className)}>
+      <Card className={cn("p-6", className)}>
         <div className="space-y-4">
           {[...Array(5)].map((_, i) => (
             <div key={i} className="flex items-center gap-4">
@@ -188,7 +197,7 @@ export function TransactionTable({
 
   if (transactions.length === 0) {
     return (
-      <Card className={cn('p-12 text-center', className)}>
+      <Card className={cn("p-12 text-center", className)}>
         <div className="mx-auto max-w-md">
           <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-muted">
             <Calendar className="h-8 w-8 text-muted-foreground" />
@@ -203,7 +212,7 @@ export function TransactionTable({
   }
 
   return (
-    <div className={cn('space-y-4', className)}>
+    <div className={cn("space-y-4", className)}>
       {/* Filters and Search */}
       <Card className="p-4">
         <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
@@ -223,25 +232,30 @@ export function TransactionTable({
           <div className="flex flex-wrap items-center gap-2">
             {/* Type Filter */}
             <div className="flex items-center gap-1 rounded-lg border p-1">
-              {(['all', 'deposit', 'withdrawal', 'transfer'] as TransactionType[]).map(
-                (type) => (
-                  <button
-                    key={type}
-                    onClick={() => {
-                      setTypeFilter(type);
-                      setCurrentPage(1);
-                    }}
-                    className={cn(
-                      'rounded px-3 py-1.5 text-sm font-medium transition-colors',
-                      typeFilter === type
-                        ? 'bg-primary text-primary-foreground'
-                        : 'text-muted-foreground hover:bg-muted'
-                    )}
-                  >
-                    {type.charAt(0).toUpperCase() + type.slice(1)}
-                  </button>
-                )
-              )}
+              {(
+                [
+                  "all",
+                  "deposit",
+                  "withdrawal",
+                  "transfer",
+                ] as TransactionType[]
+              ).map((type) => (
+                <button
+                  key={type}
+                  onClick={() => {
+                    setTypeFilter(type);
+                    setCurrentPage(1);
+                  }}
+                  className={cn(
+                    "rounded px-3 py-1.5 text-sm font-medium transition-colors",
+                    typeFilter === type
+                      ? "bg-primary text-primary-foreground"
+                      : "text-muted-foreground hover:bg-muted",
+                  )}
+                >
+                  {type.charAt(0).toUpperCase() + type.slice(1)}
+                </button>
+              ))}
             </div>
 
             {/* Export Button */}
@@ -259,9 +273,10 @@ export function TransactionTable({
 
         {/* Results count */}
         <div className="mt-4 text-sm text-muted-foreground">
-          Showing {startIndex + 1}-{Math.min(endIndex, filteredTransactions.length)} of{' '}
+          Showing {startIndex + 1}-
+          {Math.min(endIndex, filteredTransactions.length)} of{" "}
           {filteredTransactions.length} transaction
-          {filteredTransactions.length !== 1 ? 's' : ''}
+          {filteredTransactions.length !== 1 ? "s" : ""}
         </div>
       </Card>
 
@@ -273,26 +288,26 @@ export function TransactionTable({
               <tr className="border-b bg-muted/50">
                 <th className="p-4 text-left">
                   <button
-                    onClick={() => handleSort('date')}
+                    onClick={() => handleSort("date")}
                     className="flex items-center gap-1 font-semibold hover:text-primary"
                   >
                     Date
-                    {sortField === 'date' && (
+                    {sortField === "date" && (
                       <span className="text-xs">
-                        {sortOrder === 'asc' ? '↑' : '↓'}
+                        {sortOrder === "asc" ? "↑" : "↓"}
                       </span>
                     )}
                   </button>
                 </th>
                 <th className="p-4 text-left">
                   <button
-                    onClick={() => handleSort('description')}
+                    onClick={() => handleSort("description")}
                     className="flex items-center gap-1 font-semibold hover:text-primary"
                   >
                     Description
-                    {sortField === 'description' && (
+                    {sortField === "description" && (
                       <span className="text-xs">
-                        {sortOrder === 'asc' ? '↑' : '↓'}
+                        {sortOrder === "asc" ? "↑" : "↓"}
                       </span>
                     )}
                   </button>
@@ -300,13 +315,13 @@ export function TransactionTable({
                 <th className="p-4 text-left font-semibold">Type</th>
                 <th className="p-4 text-right">
                   <button
-                    onClick={() => handleSort('amount')}
+                    onClick={() => handleSort("amount")}
                     className="flex items-center gap-1 font-semibold hover:text-primary ml-auto"
                   >
                     Amount
-                    {sortField === 'amount' && (
+                    {sortField === "amount" && (
                       <span className="text-xs">
-                        {sortOrder === 'asc' ? '↑' : '↓'}
+                        {sortOrder === "asc" ? "↑" : "↓"}
                       </span>
                     )}
                   </button>
@@ -317,30 +332,37 @@ export function TransactionTable({
             <tbody>
               {paginatedTransactions.map((transaction, index) => (
                 <tr
-                  key={transaction.transaction_id || index}
+                  key={transaction.id || index}
                   className="border-b transition-colors hover:bg-muted/50"
                 >
                   <td className="p-4">
                     <div className="flex flex-col">
                       <span className="font-medium">
-                        {formatDate(transaction.transaction_date, 'short')}
+                        {formatDate(transaction.created_at, {
+                          month: "short",
+                          day: "numeric",
+                          year: "numeric",
+                        })}
                       </span>
                       <span className="text-xs text-muted-foreground">
-                        {new Date(transaction.transaction_date).toLocaleTimeString([], {
-                          hour: '2-digit',
-                          minute: '2-digit',
-                        })}
+                        {new Date(transaction.created_at).toLocaleTimeString(
+                          [],
+                          {
+                            hour: "2-digit",
+                            minute: "2-digit",
+                          },
+                        )}
                       </span>
                     </div>
                   </td>
                   <td className="p-4">
                     <div className="flex items-center gap-3">
                       <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-muted">
-                        {getTransactionIcon(transaction.transaction_type)}
+                        {getTransactionIcon(transaction.type)}
                       </div>
                       <div className="flex flex-col">
                         <span className="font-medium">
-                          {transaction.description || 'No description'}
+                          {transaction.description || "No description"}
                         </span>
                         {transaction.reference_number && (
                           <span className="text-xs text-muted-foreground">
@@ -351,21 +373,16 @@ export function TransactionTable({
                     </div>
                   </td>
                   <td className="p-4">
-                    <Badge variant="outline">
-                      {transaction.transaction_type}
-                    </Badge>
+                    <Badge variant="outline">{transaction.type}</Badge>
                   </td>
                   <td className="p-4 text-right">
                     <span
                       className={cn(
-                        'text-lg font-semibold',
-                        getTransactionColor(transaction.transaction_type)
+                        "text-lg font-semibold",
+                        getTransactionColor(transaction.type),
                       )}
                     >
-                      {transaction.transaction_type.toLowerCase() === 'withdrawal' ||
-                      transaction.transaction_type.toLowerCase() === 'debit'
-                        ? '-'
-                        : '+'}
+                      {transaction.type.toLowerCase() === "debit" ? "-" : "+"}
                       {formatCurrency(Math.abs(transaction.amount))}
                     </span>
                   </td>
@@ -397,7 +414,9 @@ export function TransactionTable({
               <Button
                 variant="outline"
                 size="sm"
-                onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
+                onClick={() =>
+                  setCurrentPage((p) => Math.min(totalPages, p + 1))
+                }
                 disabled={currentPage === totalPages}
               >
                 Next

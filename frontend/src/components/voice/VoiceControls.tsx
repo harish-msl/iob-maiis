@@ -10,9 +10,9 @@ import {
   AlertCircle,
   Loader2,
 } from "lucide-react";
-import { Button } from "@/components/ui/Button";
-import { Card } from "@/components/ui/Card";
-import { Badge } from "@/components/ui/Badge";
+import { Button } from "@/components/ui/button";
+import { Card } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils/cn";
 import { VoiceRecorder } from "./VoiceRecorder";
 import { AudioPlayer } from "./AudioPlayer";

@@ -1,6 +1,6 @@
-'use client';
+"use client";
 
-import React, { useState } from 'react';
+import React, { useState } from "react";
 import {
   Copy,
   Check,
@@ -11,12 +11,12 @@ import {
   Maximize2,
   Eye,
   EyeOff,
-} from 'lucide-react';
-import { Card } from '@/components/ui/Card';
-import { Button } from '@/components/ui/Button';
-import { Input } from '@/components/ui/Input';
-import { Badge } from '@/components/ui/Badge';
-import { cn } from '@/lib/utils/cn';
+} from "lucide-react";
+import { Card } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Badge } from "@/components/ui/badge";
+import { cn } from "@/lib/utils/cn";
 
 interface OCRViewerProps {
   text: string;
@@ -31,9 +31,14 @@ interface OCRViewerProps {
   className?: string;
 }
 
-export function OCRViewer({ text, filename, metadata, className }: OCRViewerProps) {
+export function OCRViewer({
+  text,
+  filename,
+  metadata,
+  className,
+}: OCRViewerProps) {
   const [copied, setCopied] = useState(false);
-  const [searchQuery, setSearchQuery] = useState('');
+  const [searchQuery, setSearchQuery] = useState("");
   const [fontSize, setFontSize] = useState(14);
   const [isExpanded, setIsExpanded] = useState(false);
   const [showLineNumbers, setShowLineNumbers] = useState(false);
@@ -44,16 +49,16 @@ export function OCRViewer({ text, filename, metadata, className }: OCRViewerProp
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
     } catch (error) {
-      console.error('Failed to copy text:', error);
+      console.error("Failed to copy text:", error);
     }
   };
 
   const handleDownload = () => {
-    const blob = new Blob([text], { type: 'text/plain' });
+    const blob = new Blob([text], { type: "text/plain" });
     const url = window.URL.createObjectURL(blob);
-    const a = document.createElement('a');
+    const a = document.createElement("a");
     a.href = url;
-    a.download = `${filename || 'document'}_ocr.txt`;
+    a.download = `${filename || "document"}_ocr.txt`;
     a.click();
     window.URL.revokeObjectURL(url);
   };
@@ -61,25 +66,25 @@ export function OCRViewer({ text, filename, metadata, className }: OCRViewerProp
   const highlightText = (text: string, query: string) => {
     if (!query.trim()) return text;
 
-    const parts = text.split(new RegExp(`(${query})`, 'gi'));
+    const parts = text.split(new RegExp(`(${query})`, "gi"));
     return parts
-      .map((part, index) =>
+      .map((part) =>
         part.toLowerCase() === query.toLowerCase()
           ? `<mark class="bg-yellow-200 dark:bg-yellow-800">${part}</mark>`
-          : part
+          : part,
       )
-      .join('');
+      .join("");
   };
 
-  const lines = text.split('\n');
+  const lines = text.split("\n");
   const displayText = searchQuery ? highlightText(text, searchQuery) : text;
 
   const matchCount = searchQuery
-    ? (text.match(new RegExp(searchQuery, 'gi')) || []).length
+    ? (text.match(new RegExp(searchQuery, "gi")) || []).length
     : 0;
 
   return (
-    <Card className={cn('flex flex-col overflow-hidden', className)}>
+    <Card className={cn("flex flex-col overflow-hidden", className)}>
       {/* Header */}
       <div className="border-b bg-muted/50 p-4">
         <div className="mb-4 flex items-start justify-between gap-4">
@@ -94,7 +99,9 @@ export function OCRViewer({ text, filename, metadata, className }: OCRViewerProp
               variant="outline"
               size="sm"
               onClick={() => setShowLineNumbers(!showLineNumbers)}
-              title={showLineNumbers ? 'Hide line numbers' : 'Show line numbers'}
+              title={
+                showLineNumbers ? "Hide line numbers" : "Show line numbers"
+              }
             >
               {showLineNumbers ? (
                 <EyeOff className="h-4 w-4" />
@@ -124,7 +131,7 @@ export function OCRViewer({ text, filename, metadata, className }: OCRViewerProp
               variant="outline"
               size="sm"
               onClick={() => setIsExpanded(!isExpanded)}
-              title={isExpanded ? 'Collapse' : 'Expand'}
+              title={isExpanded ? "Collapse" : "Expand"}
             >
               <Maximize2 className="h-4 w-4" />
             </Button>
@@ -158,18 +165,20 @@ export function OCRViewer({ text, filename, metadata, className }: OCRViewerProp
             )}
             {metadata.pages !== undefined && (
               <Badge variant="secondary">
-                {metadata.pages} page{metadata.pages !== 1 ? 's' : ''}
+                {metadata.pages} page{metadata.pages !== 1 ? "s" : ""}
               </Badge>
             )}
             {metadata.confidence !== undefined && (
               <Badge
                 variant="outline"
                 className={cn(
-                  metadata.confidence > 0.9 && 'border-green-500 text-green-500',
+                  metadata.confidence > 0.9 &&
+                    "border-green-500 text-green-500",
                   metadata.confidence > 0.7 &&
                     metadata.confidence <= 0.9 &&
-                    'border-yellow-500 text-yellow-500',
-                  metadata.confidence <= 0.7 && 'border-orange-500 text-orange-500'
+                    "border-yellow-500 text-yellow-500",
+                  metadata.confidence <= 0.7 &&
+                    "border-orange-500 text-orange-500",
                 )}
               >
                 {(metadata.confidence * 100).toFixed(0)}% confidence
@@ -194,7 +203,7 @@ export function OCRViewer({ text, filename, metadata, className }: OCRViewerProp
           {searchQuery && (
             <div className="absolute right-3 top-1/2 -translate-y-1/2">
               <Badge variant="secondary" className="text-xs">
-                {matchCount} match{matchCount !== 1 ? 'es' : ''}
+                {matchCount} match{matchCount !== 1 ? "es" : ""}
               </Badge>
             </div>
           )}
@@ -204,8 +213,8 @@ export function OCRViewer({ text, filename, metadata, className }: OCRViewerProp
       {/* Content */}
       <div
         className={cn(
-          'flex-1 overflow-auto p-6',
-          isExpanded && 'max-h-[600px]'
+          "flex-1 overflow-auto p-6",
+          isExpanded && "max-h-[600px]",
         )}
       >
         {text ? (
@@ -260,10 +269,10 @@ export function OCRViewer({ text, filename, metadata, className }: OCRViewerProp
       {/* Footer */}
       {text && (
         <div className="border-t bg-muted/50 p-3 text-center text-sm text-muted-foreground">
-          {lines.length} line{lines.length !== 1 ? 's' : ''} •{' '}
+          {lines.length} line{lines.length !== 1 ? "s" : ""} •{" "}
           {text.split(/\s+/).filter(Boolean).length} word
-          {text.split(/\s+/).filter(Boolean).length !== 1 ? 's' : ''} •{' '}
-          {text.length} character{text.length !== 1 ? 's' : ''}
+          {text.split(/\s+/).filter(Boolean).length !== 1 ? "s" : ""} •{" "}
+          {text.length} character{text.length !== 1 ? "s" : ""}
         </div>
       )}
     </Card>

@@ -24,11 +24,10 @@ class EmbeddingService:
     """
 
     def __init__(self):
-        self.ollama_url = settings.OLLAMA_BASE_URL
+        self.ollama_url = settings.OLLAMA_URL
         self.embedding_model = settings.EMBEDDING_MODEL
-        self.qdrant_host = settings.QDRANT_HOST
-        self.qdrant_port = settings.QDRANT_PORT
-        self.collection_name = "banking_documents"
+        self.qdrant_url = settings.QDRANT_URL
+        self.collection_name = settings.QDRANT_COLLECTION_NAME
         self.embedding_dim = 768  # nomic-embed-text dimension
         self.client: Optional[QdrantClient] = None
         self.timeout = aiohttp.ClientTimeout(total=60)
@@ -43,8 +42,7 @@ class EmbeddingService:
         try:
             # Initialize Qdrant client
             self.client = QdrantClient(
-                host=self.qdrant_host,
-                port=self.qdrant_port,
+                url=self.qdrant_url,
                 timeout=60,
             )
 

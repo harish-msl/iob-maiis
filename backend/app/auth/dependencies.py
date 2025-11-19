@@ -11,7 +11,6 @@ from jose import JWTError, jwt
 from sqlalchemy.orm import Session
 
 from app.core.config import get_settings
-from app.core.security import verify_token
 from app.db.session import get_db
 from app.models.user import User
 

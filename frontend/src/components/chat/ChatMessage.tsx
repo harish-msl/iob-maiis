@@ -1,16 +1,16 @@
-'use client';
+"use client";
 
-import React from 'react';
-import ReactMarkdown from 'react-markdown';
-import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
-import { vscDarkPlus } from 'react-syntax-highlighter/dist/esm/styles/prism';
-import remarkGfm from 'remark-gfm';
-import { Bot, User, Copy, Check, FileText, ExternalLink } from 'lucide-react';
-import type { ChatMessage as ChatMessageType } from '@/lib/types/chat';
-import { Card } from '@/components/ui/Card';
-import { Button } from '@/components/ui/Button';
-import { Badge } from '@/components/ui/Badge';
-import { cn } from '@/lib/utils/cn';
+import React from "react";
+import ReactMarkdown from "react-markdown";
+import { Prism as SyntaxHighlighter } from "react-syntax-highlighter";
+import { vscDarkPlus } from "react-syntax-highlighter/dist/esm/styles/prism";
+import remarkGfm from "remark-gfm";
+import { Bot, User, Copy, Check, FileText, ExternalLink } from "lucide-react";
+import type { ChatMessage as ChatMessageType } from "@/lib/types/chat";
+import { Card } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { cn } from "@/lib/utils/cn";
 
 interface ChatMessageProps {
   message: ChatMessageType;
@@ -18,12 +18,16 @@ interface ChatMessageProps {
   className?: string;
 }
 
-export function ChatMessage({ message, isStreaming, className }: ChatMessageProps) {
+export function ChatMessage({
+  message,
+  isStreaming,
+  className,
+}: ChatMessageProps) {
   const [copied, setCopied] = React.useState(false);
   const [expandedSources, setExpandedSources] = React.useState(false);
 
-  const isUser = message.role === 'user';
-  const isAssistant = message.role === 'assistant';
+  const isUser = message.role === "user";
+  const isAssistant = message.role === "assistant";
 
   const handleCopy = async () => {
     try {
@@ -31,24 +35,25 @@ export function ChatMessage({ message, isStreaming, className }: ChatMessageProp
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
     } catch (error) {
-      console.error('Failed to copy message:', error);
+      console.error("Failed to copy message:", error);
     }
   };
 
   return (
     <div
       className={cn(
-        'group flex gap-4 px-4 py-6 transition-colors hover:bg-muted/50',
-        isUser && 'bg-muted/30',
-        className
+        "group flex gap-4 px-4 py-6 transition-colors hover:bg-muted/50",
+        isUser && "bg-muted/30",
+        className,
       )}
     >
       {/* Avatar */}
       <div
         className={cn(
-          'flex h-8 w-8 shrink-0 select-none items-center justify-center rounded-lg',
-          isUser && 'bg-primary text-primary-foreground',
-          isAssistant && 'bg-gradient-to-br from-purple-500 to-blue-500 text-white'
+          "flex h-8 w-8 shrink-0 select-none items-center justify-center rounded-lg",
+          isUser && "bg-primary text-primary-foreground",
+          isAssistant &&
+            "bg-gradient-to-br from-purple-500 to-blue-500 text-white",
         )}
       >
         {isUser ? <User className="h-5 w-5" /> : <Bot className="h-5 w-5" />}
@@ -59,13 +64,13 @@ export function ChatMessage({ message, isStreaming, className }: ChatMessageProp
         {/* Header with role and timestamp */}
         <div className="flex items-center gap-2">
           <span className="text-sm font-semibold">
-            {isUser ? 'You' : 'AI Assistant'}
+            {isUser ? "You" : "AI Assistant"}
           </span>
           {message.timestamp && (
             <span className="text-xs text-muted-foreground">
               {new Date(message.timestamp).toLocaleTimeString([], {
-                hour: '2-digit',
-                minute: '2-digit',
+                hour: "2-digit",
+                minute: "2-digit",
               })}
             </span>
           )}
@@ -82,9 +87,10 @@ export function ChatMessage({ message, isStreaming, className }: ChatMessageProp
           <ReactMarkdown
             remarkPlugins={[remarkGfm]}
             components={{
-              code({ node, inline, className, children, ...props }) {
-                const match = /language-(\w+)/.exec(className || '');
-                const language = match ? match[1] : '';
+              code({ node, className, children, ...props }: any) {
+                const match = /language-(\w+)/.exec(className || "");
+                const language = match ? match[1] : "";
+                const inline = !match;
 
                 return !inline && language ? (
                   <div className="relative my-4">
@@ -93,7 +99,9 @@ export function ChatMessage({ message, isStreaming, className }: ChatMessageProp
                         size="sm"
                         variant="ghost"
                         onClick={() => {
-                          navigator.clipboard.writeText(String(children).trim());
+                          navigator.clipboard.writeText(
+                            String(children).trim(),
+                          );
                         }}
                         className="h-7 text-xs"
                       >
@@ -106,19 +114,19 @@ export function ChatMessage({ message, isStreaming, className }: ChatMessageProp
                       PreTag="div"
                       customStyle={{
                         margin: 0,
-                        borderRadius: '0.5rem',
-                        fontSize: '0.875rem',
+                        borderRadius: "0.5rem",
+                        fontSize: "0.875rem",
                       }}
                       {...props}
                     >
-                      {String(children).replace(/\n$/, '')}
+                      {String(children).replace(/\n$/, "")}
                     </SyntaxHighlighter>
                   </div>
                 ) : (
                   <code
                     className={cn(
-                      'rounded bg-muted px-1.5 py-0.5 font-mono text-sm',
-                      className
+                      "rounded bg-muted px-1.5 py-0.5 font-mono text-sm",
+                      className,
                     )}
                     {...props}
                   >
@@ -143,7 +151,10 @@ export function ChatMessage({ message, isStreaming, className }: ChatMessageProp
               table({ node, children, ...props }) {
                 return (
                   <div className="my-4 overflow-x-auto">
-                    <table className="min-w-full divide-y divide-border" {...props}>
+                    <table
+                      className="min-w-full divide-y divide-border"
+                      {...props}
+                    >
                       {children}
                     </table>
                   </div>
@@ -172,26 +183,8 @@ export function ChatMessage({ message, isStreaming, className }: ChatMessageProp
           </ReactMarkdown>
         </div>
 
-        {/* Attachments */}
-        {message.attachments && message.attachments.length > 0 && (
-          <div className="flex flex-wrap gap-2">
-            {message.attachments.map((attachment, index) => (
-              <Card
-                key={index}
-                className="flex items-center gap-2 px-3 py-2 text-sm"
-              >
-                <FileText className="h-4 w-4 text-muted-foreground" />
-                <span className="text-sm">{attachment.filename}</span>
-                <Badge variant="secondary" className="text-xs">
-                  {(attachment.size / 1024).toFixed(1)} KB
-                </Badge>
-              </Card>
-            ))}
-          </div>
-        )}
-
         {/* RAG Sources */}
-        {message.sources && message.sources.length > 0 && (
+        {message.metadata?.sources && message.metadata.sources.length > 0 && (
           <div className="mt-4 space-y-2">
             <button
               onClick={() => setExpandedSources(!expandedSources)}
@@ -199,13 +192,13 @@ export function ChatMessage({ message, isStreaming, className }: ChatMessageProp
             >
               <FileText className="h-4 w-4" />
               <span>
-                {message.sources.length} source{message.sources.length > 1 ? 's' : ''}{' '}
-                referenced
+                {message.metadata.sources.length} source
+                {message.metadata.sources.length > 1 ? "s" : ""} referenced
               </span>
               <svg
                 className={cn(
-                  'h-4 w-4 transition-transform',
-                  expandedSources && 'rotate-180'
+                  "h-4 w-4 transition-transform",
+                  expandedSources && "rotate-180",
                 )}
                 fill="none"
                 viewBox="0 0 24 24"
@@ -222,7 +215,7 @@ export function ChatMessage({ message, isStreaming, className }: ChatMessageProp
 
             {expandedSources && (
               <div className="space-y-2">
-                {message.sources.map((source, index) => (
+                {message.metadata.sources!.map((source, index) => (
                   <Card
                     key={index}
                     className="p-3 transition-colors hover:bg-muted/50"
@@ -238,45 +231,37 @@ export function ChatMessage({ message, isStreaming, className }: ChatMessageProp
                               <Badge
                                 variant="outline"
                                 className={cn(
-                                  'text-xs',
-                                  source.score > 0.8 && 'border-green-500 text-green-500',
+                                  "text-xs",
+                                  source.score > 0.8 &&
+                                    "border-green-500 text-green-500",
                                   source.score > 0.6 &&
                                     source.score <= 0.8 &&
-                                    'border-yellow-500 text-yellow-500',
-                                  source.score <= 0.6 && 'border-orange-500 text-orange-500'
+                                    "border-yellow-500 text-yellow-500",
+                                  source.score <= 0.6 &&
+                                    "border-orange-500 text-orange-500",
                                 )}
                               >
                                 {(source.score * 100).toFixed(0)}% match
                               </Badge>
                             )}
                           </div>
-                          {source.metadata?.filename && (
+                          {source.filename && (
                             <p className="text-sm font-medium">
-                              {source.metadata.filename}
+                              {source.filename}
                             </p>
                           )}
                         </div>
                       </div>
 
-                      {source.content && (
+                      {source.snippet && (
                         <p className="text-sm text-muted-foreground line-clamp-3">
-                          {source.content}
+                          {source.snippet}
                         </p>
                       )}
 
-                      {source.metadata && (
+                      {source.page && (
                         <div className="flex flex-wrap gap-2 text-xs text-muted-foreground">
-                          {source.metadata.page && (
-                            <span>Page {source.metadata.page}</span>
-                          )}
-                          {source.metadata.chunk_index !== undefined && (
-                            <span>Chunk {source.metadata.chunk_index}</span>
-                          )}
-                          {source.metadata.doc_type && (
-                            <Badge variant="outline" className="text-xs">
-                              {source.metadata.doc_type}
-                            </Badge>
-                          )}
+                          <span>Page {source.page}</span>
                         </div>
                       )}
                     </div>

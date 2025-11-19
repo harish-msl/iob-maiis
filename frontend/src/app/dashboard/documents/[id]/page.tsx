@@ -14,11 +14,10 @@ import {
   Loader2,
 } from 'lucide-react';
 import { OCRViewer } from '@/components/documents/OCRViewer';
-import { Button } from '@/components/ui/Button';
-import { Card } from '@/components/ui/Card';
-import { Badge } from '@/components/ui/Badge';
+import { Button } from '@/components/ui/button';
+import { Card } from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
 import { apiClient } from '@/lib/api/client';
-import { cn } from '@/lib/utils/cn';
 import { formatDate } from '@/lib/utils/format';
 
 type Document = {
@@ -54,7 +53,7 @@ export default function DocumentDetailPage() {
       setIsLoading(true);
       setError(null);
       try {
-        const response = await apiClient.documents.get(documentId);
+        const response = await apiClient.getDocument(documentId);
         setDocument(response.data);
       } catch (err: any) {
         setError(err.message || 'Failed to load document');
@@ -72,13 +71,13 @@ export default function DocumentDetailPage() {
 
     setIsProcessing(true);
     try {
-      await apiClient.documents.processOCR(documentId);
+      await apiClient.processOCR(documentId);
       setDocument({ ...document, status: 'processing' });
 
       // Poll for updates
       const pollInterval = setInterval(async () => {
         try {
-          const response = await apiClient.documents.get(documentId);
+          const response = await apiClient.getDocument(documentId);
           setDocument(response.data);
 
           if (response.data.status === 'processed' || response.data.status === 'error') {
@@ -111,7 +110,7 @@ export default function DocumentDetailPage() {
 
     setIsIngesting(true);
     try {
-      await apiClient.documents.ingest(documentId);
+      await apiClient.ingestDocuments([documentId]);
       alert('Document successfully ingested to vector database!');
     } catch (err: any) {
       setError(err.message || 'Failed to ingest document');
@@ -140,7 +139,7 @@ export default function DocumentDetailPage() {
 
     if (window.confirm(`Are you sure you want to delete "${document.filename}"?`)) {
       try {
-        await apiClient.documents.delete(documentId);
+        await apiClient.deleteDocument(documentId);
         router.push('/dashboard/documents');
       } catch (err: any) {
         setError(err.message || 'Failed to delete document');

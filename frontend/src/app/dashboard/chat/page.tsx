@@ -4,7 +4,7 @@ import React, { useState } from 'react';
 import { Menu, X } from 'lucide-react';
 import { ChatContainer } from '@/components/chat/ChatContainer';
 import { ChatSidebar } from '@/components/chat/ChatSidebar';
-import { Button } from '@/components/ui/Button';
+import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils/cn';
 
 export default function ChatPage() {

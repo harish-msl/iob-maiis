@@ -8,14 +8,13 @@ import {
   Grid3x3,
   List,
   Search,
-  Filter,
 } from 'lucide-react';
 import { DocumentUpload } from '@/components/documents/DocumentUpload';
 import { DocumentCard } from '@/components/documents/DocumentCard';
-import { Button } from '@/components/ui/Button';
-import { Input } from '@/components/ui/Input';
-import { Card } from '@/components/ui/Card';
-import { Badge } from '@/components/ui/Badge';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Card } from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
 import { apiClient } from '@/lib/api/client';
 import { cn } from '@/lib/utils/cn';
 import { useRouter } from 'next/navigation';
@@ -53,8 +52,8 @@ export default function DocumentsPage() {
   const fetchDocuments = async () => {
     try {
       setError(null);
-      const response = await apiClient.documents.list();
-      setDocuments(response.data || []);
+      const response = await apiClient.getDocuments();
+      setDocuments(response.items || []);
     } catch (err: any) {
       setError(err.message || 'Failed to load documents');
       console.error('Failed to fetch documents:', err);
@@ -75,12 +74,9 @@ export default function DocumentsPage() {
 
   const handleUpload = async (files: File[]) => {
     try {
-      const formData = new FormData();
-      files.forEach((file) => {
-        formData.append('files', file);
-      });
-
-      await apiClient.documents.upload(formData);
+      for (const file of files) {
+        await apiClient.uploadDocument(file);
+      }
       await fetchDocuments();
     } catch (err: any) {
       throw new Error(err.response?.data?.detail || 'Upload failed');
@@ -93,16 +89,16 @@ export default function DocumentsPage() {
 
   const handleDownload = async (documentId: string) => {
     try {
-      const document = documents.find((d) => d.id === documentId);
-      if (!document) return;
+      const doc = documents.find((d) => d.id === documentId);
+      if (!doc) return;
 
       // For now, create a text file with OCR text if available
-      if (document.ocr_text) {
-        const blob = new Blob([document.ocr_text], { type: 'text/plain' });
+      if (doc.ocr_text) {
+        const blob = new Blob([doc.ocr_text], { type: 'text/plain' });
         const url = window.URL.createObjectURL(blob);
         const a = document.createElement('a');
         a.href = url;
-        a.download = `${document.filename}_ocr.txt`;
+        a.download = `${doc.filename}_ocr.txt`;
         a.click();
         window.URL.revokeObjectURL(url);
       } else {
@@ -116,7 +112,7 @@ export default function DocumentsPage() {
 
   const handleDelete = async (documentId: string) => {
     try {
-      await apiClient.documents.delete(documentId);
+      await apiClient.deleteDocument(documentId);
       await fetchDocuments();
     } catch (err: any) {
       console.error('Delete failed:', err);
@@ -126,7 +122,7 @@ export default function DocumentsPage() {
 
   const handleProcessOCR = async (documentId: string) => {
     try {
-      await apiClient.documents.processOCR(documentId);
+      await apiClient.processOCR(documentId);
       // Update document status
       setDocuments((prev) =>
         prev.map((doc) =>
@@ -143,7 +139,7 @@ export default function DocumentsPage() {
 
   const handleIngest = async (documentId: string) => {
     try {
-      await apiClient.documents.ingest(documentId);
+      await apiClient.ingestDocuments([documentId]);
       alert('Document ingested to vector database successfully!');
     } catch (err: any) {
       console.error('Ingestion failed:', err);

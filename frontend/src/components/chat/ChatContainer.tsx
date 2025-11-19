@@ -1,15 +1,15 @@
-'use client';
+"use client";
 
-import React, { useEffect, useRef, useState } from 'react';
-import { Loader2, AlertCircle, Trash2, RefreshCw } from 'lucide-react';
-import { ChatMessage } from './ChatMessage';
-import { ChatInput } from './ChatInput';
-import { Button } from '@/components/ui/Button';
-import { Card } from '@/components/ui/Card';
-import { useChatStore } from '@/store/chat-store';
-import { apiClient } from '@/lib/api/client';
-import { cn } from '@/lib/utils/cn';
-import type { ChatStreamChunk } from '@/lib/types/chat';
+import React, { useEffect, useRef, useState } from "react";
+import { Loader2, AlertCircle, Trash2, RefreshCw } from "lucide-react";
+import { ChatMessage } from "./ChatMessage";
+import { ChatInput } from "./ChatInput";
+import { Button } from "@/components/ui/button";
+import { Card } from "@/components/ui/card";
+import { useChatStore } from "@/store/chat-store";
+import { apiClient } from "@/lib/api/client";
+import { cn } from "@/lib/utils/cn";
+import type { ChatStreamChunk } from "@/lib/types/chat";
 
 interface ChatContainerProps {
   sessionId?: string;
@@ -41,18 +41,21 @@ export function ChatContainer({ sessionId, className }: ChatContainerProps) {
 
   // Initialize session
   useEffect(() => {
-    if (!currentSessionId && !sessionId) {
-      setIsInitializing(true);
-      const newSession = createSession();
-      setIsInitializing(false);
-    } else if (sessionId && sessionId !== currentSessionId) {
-      setCurrentSession(sessionId);
-    }
+    const initSession = async () => {
+      if (!currentSessionId && !sessionId) {
+        setIsInitializing(true);
+        await createSession();
+        setIsInitializing(false);
+      } else if (sessionId && sessionId !== currentSessionId) {
+        setCurrentSession(sessionId);
+      }
+    };
+    initSession();
   }, [sessionId, currentSessionId, createSession, setCurrentSession]);
 
   // Auto-scroll to bottom
   const scrollToBottom = () => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   };
 
   useEffect(() => {
@@ -70,7 +73,7 @@ export function ChatContainer({ sessionId, className }: ChatContainerProps) {
 
   const handleSendMessage = async (messageText: string, files?: File[]) => {
     if (!currentSessionId) {
-      setError('No active session');
+      setError("No active session");
       return;
     }
 
@@ -78,21 +81,17 @@ export function ChatContainer({ sessionId, className }: ChatContainerProps) {
 
     try {
       // Add user message
-      const userMessage = addMessage(currentSessionId, {
-        role: 'user',
+      addMessage(currentSessionId, {
+        conversation_id: currentSessionId,
+        role: "user",
         content: messageText,
-        attachments: files?.map((file) => ({
-          filename: file.name,
-          content_type: file.type,
-          size: file.size,
-        })),
       });
 
       // Create placeholder assistant message for streaming
       const assistantMessage = addMessage(currentSessionId, {
-        role: 'assistant',
-        content: '',
-        isStreaming: true,
+        conversation_id: currentSessionId,
+        role: "assistant",
+        content: "",
       });
 
       // Start streaming
@@ -109,24 +108,24 @@ export function ChatContainer({ sessionId, className }: ChatContainerProps) {
 
       if (files && files.length > 0) {
         const formData = new FormData();
-        formData.append('message', messageText);
+        formData.append("message", messageText);
         files.forEach((file) => {
-          formData.append('files', file);
+          formData.append("files", file);
         });
-        formData.append('stream', 'true');
+        formData.append("stream", "true");
         requestData = formData;
       }
 
       // Start SSE stream
-      const response = await fetch(`${apiClient.defaults.baseURL}/chat/stream`, {
-        method: 'POST',
+      const response = await fetch(`${apiClient.getBaseURL()}/chat/stream`, {
+        method: "POST",
         headers: files
           ? {
-              Authorization: `Bearer ${localStorage.getItem('access_token')}`,
+              Authorization: `Bearer ${localStorage.getItem("access_token")}`,
             }
           : {
-              'Content-Type': 'application/json',
-              Authorization: `Bearer ${localStorage.getItem('access_token')}`,
+              "Content-Type": "application/json",
+              Authorization: `Bearer ${localStorage.getItem("access_token")}`,
             },
         body: files ? requestData : JSON.stringify(requestData),
         signal: abortControllerRef.current.signal,
@@ -141,10 +140,10 @@ export function ChatContainer({ sessionId, className }: ChatContainerProps) {
       const decoder = new TextDecoder();
 
       if (!reader) {
-        throw new Error('Failed to get response reader');
+        throw new Error("Failed to get response reader");
       }
 
-      let buffer = '';
+      let buffer = "";
 
       while (true) {
         const { done, value } = await reader.read();
@@ -157,14 +156,14 @@ export function ChatContainer({ sessionId, className }: ChatContainerProps) {
         buffer += decoder.decode(value, { stream: true });
 
         // Process complete SSE messages
-        const lines = buffer.split('\n');
-        buffer = lines.pop() || ''; // Keep incomplete line in buffer
+        const lines = buffer.split("\n");
+        buffer = lines.pop() || ""; // Keep incomplete line in buffer
 
         for (const line of lines) {
-          if (line.startsWith('data: ')) {
+          if (line.startsWith("data: ")) {
             const data = line.slice(6).trim();
 
-            if (data === '[DONE]') {
+            if (data === "[DONE]") {
               finishStreaming();
               break;
             }
@@ -172,13 +171,13 @@ export function ChatContainer({ sessionId, className }: ChatContainerProps) {
             try {
               const chunk: ChatStreamChunk = JSON.parse(data);
 
-              if (chunk.type === 'error') {
-                throw new Error(chunk.error || 'Streaming error');
+              if (chunk.type === "error") {
+                throw new Error(chunk.error || "Streaming error");
               }
 
               appendStreamChunk(chunk);
             } catch (parseError) {
-              console.error('Failed to parse SSE chunk:', parseError);
+              console.error("Failed to parse SSE chunk:", parseError);
             }
           }
         }
@@ -187,13 +186,13 @@ export function ChatContainer({ sessionId, className }: ChatContainerProps) {
       // Ensure streaming is finished
       finishStreaming();
     } catch (error: any) {
-      console.error('Chat error:', error);
+      console.error("Chat error:", error);
 
-      if (error.name === 'AbortError') {
-        setError('Message sending cancelled');
+      if (error.name === "AbortError") {
+        setError("Message sending cancelled");
         cancelStreaming();
       } else {
-        setError(error.message || 'Failed to send message');
+        setError(error.message || "Failed to send message");
         finishStreaming();
       }
     } finally {
@@ -209,7 +208,10 @@ export function ChatContainer({ sessionId, className }: ChatContainerProps) {
   };
 
   const handleClearChat = () => {
-    if (currentSessionId && window.confirm('Clear all messages in this chat?')) {
+    if (
+      currentSessionId &&
+      window.confirm("Clear all messages in this chat?")
+    ) {
       clearMessages(currentSessionId);
     }
   };
@@ -218,7 +220,7 @@ export function ChatContainer({ sessionId, className }: ChatContainerProps) {
     if (messages.length > 0) {
       const lastUserMessage = [...messages]
         .reverse()
-        .find((msg) => msg.role === 'user');
+        .find((msg) => msg.role === "user");
 
       if (lastUserMessage) {
         handleSendMessage(lastUserMessage.content);
@@ -240,7 +242,7 @@ export function ChatContainer({ sessionId, className }: ChatContainerProps) {
   }
 
   return (
-    <div className={cn('flex h-full flex-col', className)}>
+    <div className={cn("flex h-full flex-col", className)}>
       {/* Messages area */}
       <div className="flex-1 overflow-y-auto">
         {messages.length === 0 ? (
@@ -286,7 +288,8 @@ export function ChatContainer({ sessionId, className }: ChatContainerProps) {
                 key={message.id}
                 message={message}
                 isStreaming={
-                  isStreaming && message.id === useChatStore.getState().streamingMessageId
+                  isStreaming &&
+                  message.id === useChatStore.getState().streamingMessageId
                 }
               />
             ))}

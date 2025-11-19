@@ -1,10 +1,10 @@
 'use client';
 
 import React from 'react';
-import { CreditCard, TrendingUp, TrendingDown, DollarSign, Eye, EyeOff } from 'lucide-react';
-import { Card } from '@/components/ui/Card';
-import { Badge } from '@/components/ui/Badge';
-import { Button } from '@/components/ui/Button';
+import { CreditCard, DollarSign, Eye, EyeOff } from 'lucide-react';
+import { Card } from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils/cn';
 import { formatCurrency, formatDate } from '@/lib/utils/format';
 import type { Account } from '@/lib/types/banking';
@@ -64,8 +64,6 @@ export function AccountCard({
     }
   };
 
-  const isPositiveBalance = account.balance >= 0;
-  const balanceChangePositive = (account.balance - (account.available_balance || account.balance)) >= 0;
 
   return (
     <Card
@@ -92,7 +90,7 @@ export function AccountCard({
               {getAccountIcon(account.account_type)}
             </div>
             <div>
-              <h3 className="font-semibold text-foreground">{account.account_name}</h3>
+              <h3 className="font-semibold text-foreground">{account.account_number}</h3>
               <p className="text-sm text-muted-foreground">
                 •••• {account.account_number.slice(-4)}
               </p>
@@ -135,16 +133,6 @@ export function AccountCard({
           </div>
         </div>
 
-        {/* Available Balance (if different) */}
-        {account.available_balance !== undefined &&
-          account.available_balance !== account.balance && (
-            <div className="mb-4 flex items-center justify-between rounded-lg bg-muted/50 p-3">
-              <span className="text-sm text-muted-foreground">Available</span>
-              <span className="font-medium">
-                {balanceVisible ? formatCurrency(account.available_balance) : '••••••'}
-              </span>
-            </div>
-          )}
 
         {/* Stats */}
         <div className="flex items-center justify-between border-t pt-4">
@@ -157,7 +145,7 @@ export function AccountCard({
 
           {account.created_at && (
             <span className="text-xs text-muted-foreground">
-              Opened {formatDate(account.created_at, 'short')}
+              Opened {formatDate(account.created_at)}
             </span>
           )}
         </div>

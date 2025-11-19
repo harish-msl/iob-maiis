@@ -18,7 +18,7 @@ import {
   Activity,
   Loader2
 } from 'lucide-react';
-import { formatCurrency, formatDate, formatRelativeTime, getTransactionColor, cn } from '@/lib/utils';
+import { formatCurrency, formatRelativeTime, getTransactionColor, cn } from '@/lib/utils';
 import Link from 'next/link';
 
 export default function DashboardPage() {
@@ -80,7 +80,7 @@ export default function DashboardPage() {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold text-green-600">
-              {formatCurrency(summary?.statistics?.total_deposits || 0)}
+              {formatCurrency(0)}
             </div>
             <p className="text-xs text-muted-foreground mt-1">
               All time deposits
@@ -96,7 +96,7 @@ export default function DashboardPage() {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold text-red-600">
-              {formatCurrency(summary?.statistics?.total_withdrawals || 0)}
+              {formatCurrency(0)}
             </div>
             <p className="text-xs text-muted-foreground mt-1">
               All time withdrawals
@@ -112,7 +112,7 @@ export default function DashboardPage() {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold text-blue-600">
-              {formatCurrency(summary?.statistics?.total_transfers || 0)}
+              {formatCurrency(0)}
             </div>
             <p className="text-xs text-muted-foreground mt-1">
               All time transfers
@@ -171,8 +171,8 @@ export default function DashboardPage() {
                         </CardDescription>
                       </div>
                     </div>
-                    <Badge variant={account.is_active ? 'success' : 'destructive'}>
-                      {account.is_active ? 'Active' : 'Inactive'}
+                    <Badge variant={account.status === 'active' ? 'success' : 'destructive'}>
+                      {account.status === 'active' ? 'Active' : 'Inactive'}
                     </Badge>
                   </div>
                 </CardHeader>
@@ -231,23 +231,23 @@ export default function DashboardPage() {
                     <div className="flex items-center gap-4">
                       <div className={cn(
                         'flex h-10 w-10 items-center justify-center rounded-full',
-                        transaction.transaction_type === 'deposit' && 'bg-green-100 dark:bg-green-900/20',
-                        transaction.transaction_type === 'withdrawal' && 'bg-red-100 dark:bg-red-900/20',
-                        transaction.transaction_type === 'transfer' && 'bg-blue-100 dark:bg-blue-900/20'
+                        transaction.type === 'credit' && 'bg-green-100 dark:bg-green-900/20',
+                        transaction.type === 'debit' && 'bg-red-100 dark:bg-red-900/20',
+                        transaction.type === 'transfer' && 'bg-blue-100 dark:bg-blue-900/20'
                       )}>
-                        {transaction.transaction_type === 'deposit' && (
+                        {transaction.type === 'credit' && (
                           <ArrowDownRight className="h-5 w-5 text-green-600" />
                         )}
-                        {transaction.transaction_type === 'withdrawal' && (
+                        {transaction.type === 'debit' && (
                           <ArrowUpRight className="h-5 w-5 text-red-600" />
                         )}
-                        {transaction.transaction_type === 'transfer' && (
+                        {transaction.type === 'transfer' && (
                           <ArrowUpRight className="h-5 w-5 text-blue-600" />
                         )}
                       </div>
                       <div>
                         <p className="font-medium capitalize">
-                          {transaction.transaction_type}
+                          {transaction.type}
                         </p>
                         <p className="text-sm text-muted-foreground">
                           {transaction.description || 'No description'}
@@ -260,13 +260,12 @@ export default function DashboardPage() {
                     <div className="text-right">
                       <p className={cn(
                         'font-semibold',
-                        getTransactionColor(transaction.transaction_type)
+                        getTransactionColor(transaction.type)
                       )}>
-                        {transaction.transaction_type === 'withdrawal' ? '-' : '+'}
+                        {transaction.type === 'debit' ? '-' : '+'}
                         {formatCurrency(transaction.amount)}
                       </p>
                       <p className="text-sm text-muted-foreground">
-                        Balance: {formatCurrency(transaction.balance_after)}
                       </p>
                       <Badge
                         variant={

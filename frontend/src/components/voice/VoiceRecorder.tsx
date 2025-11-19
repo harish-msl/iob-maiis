@@ -2,7 +2,7 @@
 
 import React from "react";
 import { Mic, Square, Pause, Play, Trash2, Send } from "lucide-react";
-import { Button } from "@/components/ui/Button";
+import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils/cn";
 import type { WaveformData } from "./types";
 

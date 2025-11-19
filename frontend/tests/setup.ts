@@ -8,15 +8,15 @@
  * - Environment setup
  */
 
-import '@testing-library/jest-dom';
-import { TextEncoder, TextDecoder } from 'util';
+import "@testing-library/jest-dom";
+import { TextEncoder, TextDecoder } from "util";
 
 // Polyfills for Node.js environment
 global.TextEncoder = TextEncoder;
 global.TextDecoder = TextDecoder as any;
 
 // Mock Next.js router
-jest.mock('next/navigation', () => ({
+jest.mock("next/navigation", () => ({
   useRouter: jest.fn(() => ({
     push: jest.fn(),
     replace: jest.fn(),
@@ -24,31 +24,27 @@ jest.mock('next/navigation', () => ({
     back: jest.fn(),
     forward: jest.fn(),
     refresh: jest.fn(),
-    pathname: '/',
+    pathname: "/",
     query: {},
-    asPath: '/',
+    asPath: "/",
   })),
-  usePathname: jest.fn(() => '/'),
+  usePathname: jest.fn(() => "/"),
   useSearchParams: jest.fn(() => new URLSearchParams()),
   useParams: jest.fn(() => ({})),
 }));
 
 // Mock Next.js Image component
-jest.mock('next/image', () => ({
+jest.mock("next/image", () => ({
   __esModule: true,
-  default: (props: any) => {
-    // eslint-disable-next-line jsx-a11y/alt-text, @next/next/no-img-element
-    return <img {...props} />;
-  },
+  default: (props: any) => props,
 }));
 
 // Mock environment variables
-process.env.NEXT_PUBLIC_API_URL = 'http://localhost:8000';
-process.env.NEXT_PUBLIC_WS_URL = 'ws://localhost:8000';
-process.env.NODE_ENV = 'test';
+process.env.NEXT_PUBLIC_API_URL = "http://localhost:8000";
+process.env.NEXT_PUBLIC_WS_URL = "ws://localhost:8000";
 
 // Mock window.matchMedia
-Object.defineProperty(window, 'matchMedia', {
+Object.defineProperty(window, "matchMedia", {
   writable: true,
   value: jest.fn().mockImplementation((query) => ({
     matches: false,
@@ -100,7 +96,7 @@ global.AudioContext = jest.fn().mockImplementation(() => ({
     disconnect: jest.fn(),
   })),
   close: jest.fn(),
-  state: 'running',
+  state: "running",
 })) as any;
 
 // Mock MediaRecorder for voice tests
@@ -109,7 +105,7 @@ global.MediaRecorder = jest.fn().mockImplementation(() => ({
   stop: jest.fn(),
   pause: jest.fn(),
   resume: jest.fn(),
-  state: 'inactive',
+  state: "inactive",
   ondataavailable: null,
   onstop: null,
   onerror: null,
@@ -119,30 +115,30 @@ global.MediaRecorder = jest.fn().mockImplementation(() => ({
 (global.MediaRecorder as any).isTypeSupported = jest.fn(() => true);
 
 // Mock navigator.mediaDevices for voice tests
-Object.defineProperty(navigator, 'mediaDevices', {
+Object.defineProperty(navigator, "mediaDevices", {
   writable: true,
   value: {
     getUserMedia: jest.fn().mockResolvedValue({
       getTracks: jest.fn(() => [
         {
           stop: jest.fn(),
-          kind: 'audio',
+          kind: "audio",
           enabled: true,
         },
       ]),
       getAudioTracks: jest.fn(() => [
         {
           stop: jest.fn(),
-          kind: 'audio',
+          kind: "audio",
           enabled: true,
         },
       ]),
     }),
     enumerateDevices: jest.fn().mockResolvedValue([
       {
-        kind: 'audioinput',
-        deviceId: 'default',
-        label: 'Default Microphone',
+        kind: "audioinput",
+        deviceId: "default",
+        label: "Default Microphone",
       },
     ]),
   },
@@ -183,10 +179,10 @@ const originalError = console.error;
 beforeAll(() => {
   console.error = (...args: any[]) => {
     if (
-      typeof args[0] === 'string' &&
-      (args[0].includes('Warning: ReactDOM.render') ||
-        args[0].includes('Warning: useLayoutEffect') ||
-        args[0].includes('Not implemented: HTMLFormElement.prototype.submit'))
+      typeof args[0] === "string" &&
+      (args[0].includes("Warning: ReactDOM.render") ||
+        args[0].includes("Warning: useLayoutEffect") ||
+        args[0].includes("Not implemented: HTMLFormElement.prototype.submit"))
     ) {
       return;
     }

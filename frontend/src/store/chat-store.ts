@@ -1,11 +1,11 @@
-import { create } from 'zustand';
-import { devtools, persist } from 'zustand/middleware';
+import { create } from "zustand";
+import { devtools, persist } from "zustand/middleware";
 import type {
   ChatMessage,
   ChatSession,
   ChatStreamChunk,
-  RAGSource
-} from '@/lib/types/chat';
+  RAGSource,
+} from "@/lib/types/chat";
 
 interface ChatState {
   // Current session
@@ -32,8 +32,15 @@ interface ChatState {
   clearSessions: () => void;
 
   // Actions - Message management
-  addMessage: (sessionId: string, message: Omit<ChatMessage, 'id' | 'timestamp'>) => ChatMessage;
-  updateMessage: (sessionId: string, messageId: string, updates: Partial<ChatMessage>) => void;
+  addMessage: (
+    sessionId: string,
+    message: Omit<ChatMessage, "id" | "timestamp">,
+  ) => ChatMessage;
+  updateMessage: (
+    sessionId: string,
+    messageId: string,
+    updates: Partial<ChatMessage>,
+  ) => void;
   deleteMessage: (sessionId: string, messageId: string) => void;
   clearMessages: (sessionId: string) => void;
 
@@ -54,7 +61,8 @@ interface ChatState {
   getSessionById: (sessionId: string) => ChatSession | undefined;
 }
 
-const generateId = () => `${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+const generateId = () =>
+  `${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
 
 export const useChatStore = create<ChatState>()(
   devtools(
@@ -66,7 +74,7 @@ export const useChatStore = create<ChatState>()(
         messages: {},
         isStreaming: false,
         streamingMessageId: null,
-        streamingContent: '',
+        streamingContent: "",
         streamingSources: [],
         selectedMessageId: null,
         isLoadingHistory: false,
@@ -103,7 +111,7 @@ export const useChatStore = create<ChatState>()(
             sessions: state.sessions.map((session) =>
               session.id === sessionId
                 ? { ...session, title, updated_at: new Date().toISOString() }
-                : session
+                : session,
             ),
           }));
         },
@@ -156,7 +164,7 @@ export const useChatStore = create<ChatState>()(
                       message_count: updatedMessages.length,
                       updated_at: new Date().toISOString(),
                     }
-                  : session
+                  : session,
               ),
             };
           });
@@ -169,7 +177,7 @@ export const useChatStore = create<ChatState>()(
             messages: {
               ...state.messages,
               [sessionId]: (state.messages[sessionId] || []).map((msg) =>
-                msg.id === messageId ? { ...msg, ...updates } : msg
+                msg.id === messageId ? { ...msg, ...updates } : msg,
               ),
             },
           }));
@@ -178,7 +186,7 @@ export const useChatStore = create<ChatState>()(
         deleteMessage: (sessionId, messageId) => {
           set((state) => {
             const updatedMessages = (state.messages[sessionId] || []).filter(
-              (msg) => msg.id !== messageId
+              (msg) => msg.id !== messageId,
             );
 
             return {
@@ -193,7 +201,7 @@ export const useChatStore = create<ChatState>()(
                       message_count: updatedMessages.length,
                       updated_at: new Date().toISOString(),
                     }
-                  : session
+                  : session,
               ),
             };
           });
@@ -207,8 +215,12 @@ export const useChatStore = create<ChatState>()(
             },
             sessions: state.sessions.map((session) =>
               session.id === sessionId
-                ? { ...session, message_count: 0, updated_at: new Date().toISOString() }
-                : session
+                ? {
+                    ...session,
+                    message_count: 0,
+                    updated_at: new Date().toISOString(),
+                  }
+                : session,
             ),
           }));
         },
@@ -218,7 +230,7 @@ export const useChatStore = create<ChatState>()(
           set({
             isStreaming: true,
             streamingMessageId: messageId,
-            streamingContent: '',
+            streamingContent: "",
             streamingSources: [],
           });
         },
@@ -228,26 +240,33 @@ export const useChatStore = create<ChatState>()(
             let newContent = state.streamingContent;
             let newSources = state.streamingSources;
 
-            if (chunk.type === 'content' && chunk.content) {
+            if (chunk.type === "token" && chunk.content) {
               newContent += chunk.content;
             }
 
-            if (chunk.type === 'sources' && chunk.sources) {
-              newSources = chunk.sources;
+            if (chunk.metadata?.sources) {
+              newSources = chunk.metadata.sources;
             }
 
             // Update the streaming message in the current session
             const currentSessionId = state.currentSessionId;
             if (currentSessionId && state.streamingMessageId) {
-              const updatedMessages = (state.messages[currentSessionId] || []).map(
-                (msg) =>
-                  msg.id === state.streamingMessageId
-                    ? {
-                        ...msg,
-                        content: newContent,
-                        sources: newSources.length > 0 ? newSources : msg.sources,
-                      }
-                    : msg
+              const updatedMessages = (
+                state.messages[currentSessionId] || []
+              ).map((msg) =>
+                msg.id === state.streamingMessageId
+                  ? {
+                      ...msg,
+                      content: newContent,
+                      metadata: {
+                        ...msg.metadata,
+                        sources:
+                          newSources.length > 0
+                            ? newSources
+                            : msg.metadata?.sources,
+                      },
+                    }
+                  : msg,
               );
 
               return {
@@ -272,22 +291,26 @@ export const useChatStore = create<ChatState>()(
             const currentSessionId = state.currentSessionId;
             if (currentSessionId && state.streamingMessageId) {
               const finalSources = sources || state.streamingSources;
-              const updatedMessages = (state.messages[currentSessionId] || []).map(
-                (msg) =>
-                  msg.id === state.streamingMessageId
-                    ? {
-                        ...msg,
-                        content: state.streamingContent,
-                        sources: finalSources.length > 0 ? finalSources : undefined,
-                        isStreaming: false,
-                      }
-                    : msg
+              const updatedMessages = (
+                state.messages[currentSessionId] || []
+              ).map((msg) =>
+                msg.id === state.streamingMessageId
+                  ? {
+                      ...msg,
+                      content: state.streamingContent,
+                      metadata: {
+                        ...msg.metadata,
+                        sources:
+                          finalSources.length > 0 ? finalSources : undefined,
+                      },
+                    }
+                  : msg,
               );
 
               return {
                 isStreaming: false,
                 streamingMessageId: null,
-                streamingContent: '',
+                streamingContent: "",
                 streamingSources: [],
                 messages: {
                   ...state.messages,
@@ -299,7 +322,7 @@ export const useChatStore = create<ChatState>()(
             return {
               isStreaming: false,
               streamingMessageId: null,
-              streamingContent: '',
+              streamingContent: "",
               streamingSources: [],
             };
           });
@@ -310,14 +333,14 @@ export const useChatStore = create<ChatState>()(
             const currentSessionId = state.currentSessionId;
             if (currentSessionId && state.streamingMessageId) {
               // Remove the incomplete streaming message
-              const updatedMessages = (state.messages[currentSessionId] || []).filter(
-                (msg) => msg.id !== state.streamingMessageId
-              );
+              const updatedMessages = (
+                state.messages[currentSessionId] || []
+              ).filter((msg) => msg.id !== state.streamingMessageId);
 
               return {
                 isStreaming: false,
                 streamingMessageId: null,
-                streamingContent: '',
+                streamingContent: "",
                 streamingSources: [],
                 messages: {
                   ...state.messages,
@@ -329,7 +352,7 @@ export const useChatStore = create<ChatState>()(
             return {
               isStreaming: false,
               streamingMessageId: null,
-              streamingContent: '',
+              streamingContent: "",
               streamingSources: [],
             };
           });
@@ -364,16 +387,16 @@ export const useChatStore = create<ChatState>()(
         },
       }),
       {
-        name: 'chat-storage',
+        name: "chat-storage",
         partialize: (state) => ({
           sessions: state.sessions,
           messages: state.messages,
           currentSessionId: state.currentSessionId,
         }),
-      }
+      },
     ),
-    { name: 'ChatStore' }
-  )
+    { name: "ChatStore" },
+  ),
 );
 
 // Selectors for optimized re-renders
@@ -383,6 +406,7 @@ export const useCurrentSession = () =>
     if (!state.currentSessionId) return null;
     return state.getSessionById(state.currentSessionId);
   });
-export const useCurrentMessages = () => useChatStore((state) => state.getCurrentMessages());
+export const useCurrentMessages = () =>
+  useChatStore((state) => state.getCurrentMessages());
 export const useIsStreaming = () => useChatStore((state) => state.isStreaming);
 export const useChatError = () => useChatStore((state) => state.error);

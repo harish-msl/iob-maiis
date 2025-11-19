@@ -1,6 +1,6 @@
-'use client';
+"use client";
 
-import React, { useState } from 'react';
+import React, { useState } from "react";
 import {
   FileText,
   Image,
@@ -12,20 +12,19 @@ import {
   RefreshCw,
   MoreVertical,
   Calendar,
-  FileType,
   HardDrive,
-} from 'lucide-react';
-import { Card } from '@/components/ui/Card';
-import { Button } from '@/components/ui/Button';
-import { Badge } from '@/components/ui/Badge';
+} from "lucide-react";
+import { Card } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
-} from '@/components/ui/DropdownMenu';
-import { cn } from '@/lib/utils/cn';
-import { formatDate } from '@/lib/utils/format';
+} from "@/components/ui/dropdown-menu";
+import { cn } from "@/lib/utils/cn";
+import { formatDate } from "@/lib/utils/format";
 
 interface DocumentCardProps {
   document: {
@@ -34,7 +33,7 @@ interface DocumentCardProps {
     file_type: string;
     file_size: number;
     upload_date: string;
-    status: 'uploaded' | 'processing' | 'processed' | 'error';
+    status: "uploaded" | "processing" | "processed" | "error";
     ocr_text?: string;
     metadata?: {
       pages?: number;
@@ -64,16 +63,16 @@ export function DocumentCard({
 
   const getFileIcon = (fileType: string) => {
     const type = fileType.toLowerCase();
-    if (type.includes('pdf')) {
+    if (type.includes("pdf")) {
       return <FileText className="h-10 w-10 text-red-500" />;
     }
-    if (type.includes('image')) {
+    if (type.includes("image")) {
       return <Image className="h-10 w-10 text-purple-500" />;
     }
-    if (type.includes('word') || type.includes('document')) {
+    if (type.includes("word") || type.includes("document")) {
       return <FileText className="h-10 w-10 text-blue-500" />;
     }
-    if (type.includes('excel') || type.includes('spreadsheet')) {
+    if (type.includes("excel") || type.includes("spreadsheet")) {
       return <FileSpreadsheet className="h-10 w-10 text-green-500" />;
     }
     return <File className="h-10 w-10 text-gray-500" />;
@@ -81,18 +80,18 @@ export function DocumentCard({
 
   const getStatusBadge = (status: string) => {
     switch (status) {
-      case 'uploaded':
+      case "uploaded":
         return <Badge variant="secondary">Uploaded</Badge>;
-      case 'processing':
+      case "processing":
         return (
           <Badge variant="outline" className="border-blue-500 text-blue-500">
             <RefreshCw className="mr-1 h-3 w-3 animate-spin" />
             Processing
           </Badge>
         );
-      case 'processed':
+      case "processed":
         return <Badge variant="default">Processed</Badge>;
-      case 'error':
+      case "error":
         return (
           <Badge variant="outline" className="border-red-500 text-red-500">
             Error
@@ -104,22 +103,24 @@ export function DocumentCard({
   };
 
   const formatFileSize = (bytes: number): string => {
-    if (bytes === 0) return '0 Bytes';
+    if (bytes === 0) return "0 Bytes";
     const k = 1024;
-    const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+    const sizes = ["Bytes", "KB", "MB", "GB"];
     const i = Math.floor(Math.log(bytes) / Math.log(k));
-    return Math.round((bytes / Math.pow(k, i)) * 100) / 100 + ' ' + sizes[i];
+    return Math.round((bytes / Math.pow(k, i)) * 100) / 100 + " " + sizes[i];
   };
 
   const handleDelete = async () => {
     if (!onDelete) return;
 
-    if (window.confirm(`Are you sure you want to delete "${document.filename}"?`)) {
+    if (
+      window.confirm(`Are you sure you want to delete "${document.filename}"?`)
+    ) {
       setIsDeleting(true);
       try {
         await onDelete(document.id);
       } catch (error) {
-        console.error('Delete failed:', error);
+        console.error("Delete failed:", error);
       } finally {
         setIsDeleting(false);
       }
@@ -133,7 +134,7 @@ export function DocumentCard({
     try {
       await onProcessOCR(document.id);
     } catch (error) {
-      console.error('OCR processing failed:', error);
+      console.error("OCR processing failed:", error);
     } finally {
       setIsProcessing(false);
     }
@@ -142,9 +143,9 @@ export function DocumentCard({
   return (
     <Card
       className={cn(
-        'group relative overflow-hidden transition-all hover:shadow-lg',
-        onView && 'cursor-pointer',
-        className
+        "group relative overflow-hidden transition-all hover:shadow-lg",
+        onView && "cursor-pointer",
+        className,
       )}
       onClick={() => onView?.(document.id)}
     >
@@ -156,7 +157,10 @@ export function DocumentCard({
               {getFileIcon(document.file_type)}
             </div>
             <div className="min-w-0 flex-1">
-              <h3 className="mb-1 truncate font-semibold" title={document.filename}>
+              <h3
+                className="mb-1 truncate font-semibold"
+                title={document.filename}
+              >
                 {document.filename}
               </h3>
               <div className="flex flex-wrap items-center gap-2">
@@ -182,18 +186,28 @@ export function DocumentCard({
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">
               {onView && (
-                <DropdownMenuItem onClick={(e) => { e.stopPropagation(); onView(document.id); }}>
+                <DropdownMenuItem
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onView(document.id);
+                  }}
+                >
                   <Eye className="mr-2 h-4 w-4" />
                   View
                 </DropdownMenuItem>
               )}
               {onDownload && (
-                <DropdownMenuItem onClick={(e) => { e.stopPropagation(); onDownload(document.id); }}>
+                <DropdownMenuItem
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onDownload(document.id);
+                  }}
+                >
                   <Download className="mr-2 h-4 w-4" />
                   Download
                 </DropdownMenuItem>
               )}
-              {onProcessOCR && document.status === 'uploaded' && (
+              {onProcessOCR && document.status === "uploaded" && (
                 <DropdownMenuItem
                   onClick={(e) => {
                     e.stopPropagation();
@@ -201,12 +215,22 @@ export function DocumentCard({
                   }}
                   disabled={isProcessing}
                 >
-                  <RefreshCw className={cn('mr-2 h-4 w-4', isProcessing && 'animate-spin')} />
+                  <RefreshCw
+                    className={cn(
+                      "mr-2 h-4 w-4",
+                      isProcessing && "animate-spin",
+                    )}
+                  />
                   Process OCR
                 </DropdownMenuItem>
               )}
-              {onIngest && document.status === 'processed' && (
-                <DropdownMenuItem onClick={(e) => { e.stopPropagation(); onIngest(document.id); }}>
+              {onIngest && document.status === "processed" && (
+                <DropdownMenuItem
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onIngest(document.id);
+                  }}
+                >
                   <HardDrive className="mr-2 h-4 w-4" />
                   Ingest to Vector DB
                 </DropdownMenuItem>
@@ -238,7 +262,13 @@ export function DocumentCard({
             </div>
             <div className="flex items-center gap-2 text-muted-foreground">
               <Calendar className="h-4 w-4" />
-              <span>{formatDate(document.upload_date, 'short')}</span>
+              <span>
+                {formatDate(document.upload_date, {
+                  month: "short",
+                  day: "numeric",
+                  year: "numeric",
+                })}
+              </span>
             </div>
           </div>
 
@@ -247,7 +277,8 @@ export function DocumentCard({
             <div className="flex flex-wrap gap-2">
               {document.metadata.pages && (
                 <Badge variant="secondary" className="text-xs">
-                  {document.metadata.pages} page{document.metadata.pages !== 1 ? 's' : ''}
+                  {document.metadata.pages} page
+                  {document.metadata.pages !== 1 ? "s" : ""}
                 </Badge>
               )}
               {document.metadata.word_count && (
@@ -261,7 +292,9 @@ export function DocumentCard({
           {/* OCR Preview */}
           {document.ocr_text && (
             <div className="rounded-lg border bg-muted/50 p-3">
-              <p className="mb-1 text-xs font-semibold text-muted-foreground">OCR Text Preview</p>
+              <p className="mb-1 text-xs font-semibold text-muted-foreground">
+                OCR Text Preview
+              </p>
               <p className="line-clamp-2 text-sm text-foreground">
                 {document.ocr_text}
               </p>

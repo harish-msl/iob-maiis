@@ -11,16 +11,16 @@ import {
   MoreVertical,
   Calendar,
 } from 'lucide-react';
-import { Button } from '@/components/ui/Button';
-import { Input } from '@/components/ui/Input';
-import { Card } from '@/components/ui/Card';
-import { Badge } from '@/components/ui/Badge';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Card } from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
-} from '@/components/ui/DropdownMenu';
+} from '@/components/ui/dropdown-menu';
 import { useChatStore } from '@/store/chat-store';
 import { cn } from '@/lib/utils/cn';
 import { formatDistanceToNow } from '@/lib/utils/format';

@@ -32,296 +32,438 @@ logger = logging.getLogger(__name__)
 # PROMETHEUS METRICS DEFINITIONS
 # ============================================
 
+
+# Helper function to safely create metrics (prevents duplicate registration on reload)
+def _get_or_create_metric(metric_class, *args, **kwargs):
+    """Get existing metric or create new one if it doesn't exist"""
+    try:
+        return metric_class(*args, **kwargs)
+    except ValueError:
+        # Metric already exists, return None (will use existing metric from REGISTRY)
+        return None
+
+
 # Application Info
-app_info = Info(
-    "iob_maiis_application",
-    "Application information",
-)
+try:
+    app_info = Info(
+        "iob_maiis_application",
+        "Application information",
+    )
+except ValueError:
+    # Metric already registered
+    pass
 
 # HTTP Request Metrics
-http_requests_total = Counter(
-    "http_requests_total",
-    "Total HTTP requests",
-    ["method", "endpoint", "status"],
-)
+try:
+    http_requests_total = Counter(
+        "http_requests_total",
+        "Total HTTP requests",
+        ["method", "endpoint", "status"],
+    )
+except ValueError:
+    pass
 
-http_request_duration_seconds = Histogram(
-    "http_request_duration_seconds",
-    "HTTP request latency in seconds",
-    ["method", "endpoint"],
-    buckets=(
-        0.005,
-        0.01,
-        0.025,
-        0.05,
-        0.075,
-        0.1,
-        0.25,
-        0.5,
-        0.75,
-        1.0,
-        2.5,
-        5.0,
-        7.5,
-        10.0,
-    ),
-)
+# Wrap all metrics in try-except to prevent duplicate registration on reload
+try:
+    http_request_duration_seconds = Histogram(
+        "http_request_duration_seconds",
+        "HTTP request latency in seconds",
+        ["method", "endpoint"],
+        buckets=(
+            0.005,
+            0.01,
+            0.025,
+            0.05,
+            0.075,
+            0.1,
+            0.25,
+            0.5,
+            0.75,
+            1.0,
+            2.5,
+            5.0,
+            7.5,
+            10.0,
+        ),
+    )
+except ValueError:
+    pass
 
-http_request_size_bytes = Histogram(
-    "http_request_size_bytes",
-    "HTTP request size in bytes",
-    ["method", "endpoint"],
-    buckets=(100, 1000, 10000, 100000, 1000000, 10000000),
-)
+try:
+    http_request_size_bytes = Histogram(
+        "http_request_size_bytes",
+        "HTTP request size in bytes",
+        ["method", "endpoint"],
+        buckets=(100, 1000, 10000, 100000, 1000000, 10000000),
+    )
+except ValueError:
+    pass
 
-http_response_size_bytes = Histogram(
-    "http_response_size_bytes",
-    "HTTP response size in bytes",
-    ["method", "endpoint"],
-    buckets=(100, 1000, 10000, 100000, 1000000, 10000000),
-)
+try:
+    http_response_size_bytes = Histogram(
+        "http_response_size_bytes",
+        "HTTP response size in bytes",
+        ["method", "endpoint"],
+        buckets=(100, 1000, 10000, 100000, 1000000, 10000000),
+    )
+except ValueError:
+    pass
 
-http_requests_in_progress = Gauge(
-    "http_requests_in_progress",
-    "Number of HTTP requests in progress",
-    ["method", "endpoint"],
-)
+try:
+    http_requests_in_progress = Gauge(
+        "http_requests_in_progress",
+        "Number of HTTP requests in progress",
+        ["method", "endpoint"],
+    )
+except ValueError:
+    pass
 
 # Error Metrics
-http_exceptions_total = Counter(
-    "http_exceptions_total",
-    "Total HTTP exceptions",
-    ["method", "endpoint", "exception_type"],
-)
+try:
+    http_exceptions_total = Counter(
+        "http_exceptions_total",
+        "Total HTTP exceptions",
+        ["method", "endpoint", "exception_type"],
+    )
+except ValueError:
+    pass
 
 # Authentication Metrics
-auth_attempts_total = Counter(
-    "auth_attempts_total",
-    "Total authentication attempts",
-    ["status", "method"],
-)
+try:
+    auth_attempts_total = Counter(
+        "auth_attempts_total",
+        "Total authentication attempts",
+        ["status", "method"],
+    )
+except ValueError:
+    pass
 
-auth_failures_total = Counter(
-    "auth_failures_total",
-    "Total authentication failures",
-    ["reason"],
-)
+try:
+    auth_failures_total = Counter(
+        "auth_failures_total",
+        "Total authentication failures",
+        ["reason"],
+    )
+except ValueError:
+    pass
 
 # Database Metrics
-db_queries_total = Counter(
-    "db_queries_total",
-    "Total database queries",
-    ["operation", "table"],
-)
+try:
+    db_queries_total = Counter(
+        "db_queries_total",
+        "Total database queries",
+        ["operation", "table"],
+    )
+except ValueError:
+    pass
 
-db_query_duration_seconds = Histogram(
-    "db_query_duration_seconds",
-    "Database query duration in seconds",
-    ["operation", "table"],
-    buckets=(0.001, 0.005, 0.01, 0.025, 0.05, 0.1, 0.25, 0.5, 1.0, 2.5, 5.0),
-)
+try:
+    db_query_duration_seconds = Histogram(
+        "db_query_duration_seconds",
+        "Database query duration in seconds",
+        ["operation", "table"],
+        buckets=(0.001, 0.005, 0.01, 0.025, 0.05, 0.1, 0.25, 0.5, 1.0, 2.5, 5.0),
+    )
+except ValueError:
+    pass
 
-db_connections_active = Gauge(
-    "db_connections_active",
-    "Number of active database connections",
-)
+try:
+    db_connections_active = Gauge(
+        "db_connections_active",
+        "Number of active database connections",
+    )
+except ValueError:
+    pass
 
-db_connections_idle = Gauge(
-    "db_connections_idle",
-    "Number of idle database connections",
-)
+try:
+    db_connections_idle = Gauge(
+        "db_connections_idle",
+        "Number of idle database connections",
+    )
+except ValueError:
+    pass
 
 # Cache Metrics
-cache_operations_total = Counter(
-    "cache_operations_total",
-    "Total cache operations",
-    ["operation", "status"],
-)
+try:
+    cache_operations_total = Counter(
+        "cache_operations_total",
+        "Total cache operations",
+        ["operation", "status"],
+    )
+except ValueError:
+    pass
 
-cache_hit_ratio = Gauge(
-    "cache_hit_ratio",
-    "Cache hit ratio",
-)
+try:
+    cache_hit_ratio = Gauge(
+        "cache_hit_ratio",
+        "Cache hit ratio",
+    )
+except ValueError:
+    pass
 
 # Storage Metrics
-storage_operations_total = Counter(
-    "storage_operations_total",
-    "Total storage operations",
-    ["operation", "provider", "status"],
-)
+try:
+    storage_operations_total = Counter(
+        "storage_operations_total",
+        "Total storage operations",
+        ["operation", "provider", "status"],
+    )
+except ValueError:
+    pass
 
-storage_upload_duration_seconds = Histogram(
-    "storage_upload_duration_seconds",
-    "Storage upload duration in seconds",
-    ["provider"],
-    buckets=(0.1, 0.5, 1.0, 2.5, 5.0, 10.0, 30.0, 60.0),
-)
+try:
+    storage_upload_duration_seconds = Histogram(
+        "storage_upload_duration_seconds",
+        "Storage upload duration in seconds",
+        ["provider"],
+        buckets=(0.1, 0.5, 1.0, 2.5, 5.0, 10.0, 30.0, 60.0),
+    )
+except ValueError:
+    pass
 
-storage_upload_size_bytes = Histogram(
-    "storage_upload_size_bytes",
-    "Storage upload size in bytes",
-    ["provider"],
-    buckets=(1000, 10000, 100000, 1000000, 10000000, 50000000),
-)
+try:
+    storage_upload_size_bytes = Histogram(
+        "storage_upload_size_bytes",
+        "Storage upload size in bytes",
+        ["provider"],
+        buckets=(1000, 10000, 100000, 1000000, 10000000, 50000000),
+    )
+except ValueError:
+    pass
 
-storage_upload_errors_total = Counter(
-    "storage_upload_errors_total",
-    "Total storage upload errors",
-    ["provider", "error_type"],
-)
+try:
+    storage_upload_errors_total = Counter(
+        "storage_upload_errors_total",
+        "Total storage upload errors",
+        ["provider", "error_type"],
+    )
+except ValueError:
+    pass
 
 # Speech Provider Metrics
-speech_provider_requests_total = Counter(
-    "speech_provider_requests_total",
-    "Total speech provider requests",
-    ["provider", "operation", "status"],
-)
+try:
+    speech_provider_requests_total = Counter(
+        "speech_provider_requests_total",
+        "Total speech provider requests",
+        ["provider", "operation", "status"],
+    )
+except ValueError:
+    pass
 
-speech_provider_duration_seconds = Histogram(
-    "speech_provider_duration_seconds",
-    "Speech provider request duration in seconds",
-    ["provider", "operation"],
-    buckets=(0.5, 1.0, 2.0, 5.0, 10.0, 30.0, 60.0),
-)
+try:
+    speech_provider_duration_seconds = Histogram(
+        "speech_provider_duration_seconds",
+        "Speech provider request duration in seconds",
+        ["provider", "operation"],
+        buckets=(0.5, 1.0, 2.0, 5.0, 10.0, 30.0, 60.0),
+    )
+except ValueError:
+    pass
 
-speech_provider_fallback_total = Counter(
-    "speech_provider_fallback_total",
-    "Total speech provider fallback usage",
-    ["primary_provider", "fallback_provider"],
-)
+try:
+    speech_provider_fallback_total = Counter(
+        "speech_provider_fallback_total",
+        "Total speech provider fallback usage",
+        ["primary_provider", "fallback_provider"],
+    )
+except ValueError:
+    pass
 
-speech_audio_duration_seconds = Histogram(
-    "speech_audio_duration_seconds",
-    "Processed audio duration in seconds",
-    ["operation"],
-    buckets=(1.0, 5.0, 10.0, 30.0, 60.0, 120.0, 300.0),
-)
+try:
+    speech_audio_duration_seconds = Histogram(
+        "speech_audio_duration_seconds",
+        "Processed audio duration in seconds",
+        ["operation"],
+        buckets=(1.0, 5.0, 10.0, 30.0, 60.0, 120.0, 300.0),
+    )
+except ValueError:
+    pass
 
 # LLM & RAG Metrics
-llm_requests_total = Counter(
-    "llm_requests_total",
-    "Total LLM requests",
-    ["model", "status"],
-)
+try:
+    llm_requests_total = Counter(
+        "llm_requests_total",
+        "Total LLM requests",
+        ["model", "status"],
+    )
+except ValueError:
+    pass
 
-llm_request_duration_seconds = Histogram(
-    "llm_request_duration_seconds",
-    "LLM request duration in seconds",
-    ["model"],
-    buckets=(0.5, 1.0, 2.5, 5.0, 10.0, 30.0, 60.0, 120.0),
-)
+try:
+    llm_request_duration_seconds = Histogram(
+        "llm_request_duration_seconds",
+        "LLM request duration in seconds",
+        ["model"],
+        buckets=(0.5, 1.0, 2.5, 5.0, 10.0, 30.0, 60.0, 120.0),
+    )
+except ValueError:
+    pass
 
-llm_tokens_total = Counter(
-    "llm_tokens_total",
-    "Total LLM tokens processed",
-    ["model", "type"],  # type: prompt, completion
-)
+try:
+    llm_tokens_total = Counter(
+        "llm_tokens_total",
+        "Total LLM tokens processed",
+        ["model", "type"],
+    )
+except ValueError:
+    pass
 
-rag_pipeline_duration_seconds = Histogram(
-    "rag_pipeline_duration_seconds",
-    "RAG pipeline duration in seconds",
-    buckets=(0.5, 1.0, 2.5, 5.0, 10.0, 30.0),
-)
+try:
+    rag_pipeline_duration_seconds = Histogram(
+        "rag_pipeline_duration_seconds",
+        "RAG pipeline duration in seconds",
+        buckets=(0.5, 1.0, 2.5, 5.0, 10.0, 30.0),
+    )
+except ValueError:
+    pass
 
-rag_pipeline_errors_total = Counter(
-    "rag_pipeline_errors_total",
-    "Total RAG pipeline errors",
-    ["stage", "error_type"],
-)
+try:
+    rag_pipeline_errors_total = Counter(
+        "rag_pipeline_errors_total",
+        "Total RAG pipeline errors",
+        ["stage", "error_type"],
+    )
+except ValueError:
+    pass
 
-embedding_duration_seconds = Histogram(
-    "embedding_duration_seconds",
-    "Embedding generation duration in seconds",
-    buckets=(0.01, 0.05, 0.1, 0.5, 1.0, 2.5, 5.0),
-)
+try:
+    embedding_duration_seconds = Histogram(
+        "embedding_duration_seconds",
+        "Embedding generation duration in seconds",
+        buckets=(0.01, 0.05, 0.1, 0.5, 1.0, 2.5, 5.0),
+    )
+except ValueError:
+    pass
 
-vector_search_duration_seconds = Histogram(
-    "vector_search_duration_seconds",
-    "Vector search duration in seconds",
-    buckets=(0.01, 0.05, 0.1, 0.5, 1.0, 2.5),
-)
+try:
+    vector_search_duration_seconds = Histogram(
+        "vector_search_duration_seconds",
+        "Vector search duration in seconds",
+        buckets=(0.01, 0.05, 0.1, 0.5, 1.0, 2.5),
+    )
+except ValueError:
+    pass
 
 # Document Processing Metrics
-document_processing_total = Counter(
-    "document_processing_total",
-    "Total documents processed",
-    ["document_type", "status"],
-)
+try:
+    document_processing_total = Counter(
+        "document_processing_total",
+        "Total documents processed",
+        ["document_type", "status"],
+    )
+except ValueError:
+    pass
 
-document_processing_duration_seconds = Histogram(
-    "document_processing_duration_seconds",
-    "Document processing duration in seconds",
-    ["document_type"],
-    buckets=(0.1, 0.5, 1.0, 5.0, 10.0, 30.0, 60.0),
-)
+try:
+    document_processing_duration_seconds = Histogram(
+        "document_processing_duration_seconds",
+        "Document processing duration in seconds",
+        ["document_type"],
+        buckets=(0.1, 0.5, 1.0, 5.0, 10.0, 30.0, 60.0),
+    )
+except ValueError:
+    pass
 
-ocr_processing_duration_seconds = Histogram(
-    "ocr_processing_duration_seconds",
-    "OCR processing duration in seconds",
-    buckets=(0.5, 1.0, 2.5, 5.0, 10.0, 30.0),
-)
+try:
+    ocr_processing_duration_seconds = Histogram(
+        "ocr_processing_duration_seconds",
+        "OCR processing duration in seconds",
+        buckets=(0.5, 1.0, 2.5, 5.0, 10.0, 30.0),
+    )
+except ValueError:
+    pass
 
 # File Upload Metrics
-file_upload_total = Counter(
-    "file_upload_total",
-    "Total file uploads",
-    ["file_type", "status"],
-)
+try:
+    file_upload_total = Counter(
+        "file_upload_total",
+        "Total file uploads",
+        ["file_type", "status"],
+    )
+except ValueError:
+    pass
 
-file_upload_size_bytes = Histogram(
-    "file_upload_size_bytes",
-    "File upload size in bytes",
-    ["file_type"],
-    buckets=(1000, 10000, 100000, 1000000, 10000000, 50000000),
-)
+try:
+    file_upload_size_bytes = Histogram(
+        "file_upload_size_bytes",
+        "File upload size in bytes",
+        ["file_type"],
+        buckets=(1000, 10000, 100000, 1000000, 10000000, 50000000),
+    )
+except ValueError:
+    pass
 
 # External API Metrics
-external_api_requests_total = Counter(
-    "external_api_requests_total",
-    "Total external API requests",
-    ["provider", "endpoint", "status"],
-)
+try:
+    external_api_requests_total = Counter(
+        "external_api_requests_total",
+        "Total external API requests",
+        ["provider", "endpoint", "status"],
+    )
+except ValueError:
+    pass
 
-external_api_duration_seconds = Histogram(
-    "external_api_duration_seconds",
-    "External API request duration in seconds",
-    ["provider", "endpoint"],
-    buckets=(0.1, 0.5, 1.0, 2.5, 5.0, 10.0, 30.0),
-)
+try:
+    external_api_duration_seconds = Histogram(
+        "external_api_duration_seconds",
+        "External API request duration in seconds",
+        ["provider", "endpoint"],
+        buckets=(0.1, 0.5, 1.0, 2.5, 5.0, 10.0, 30.0),
+    )
+except ValueError:
+    pass
 
 # System Metrics
-system_cpu_usage_percent = Gauge(
-    "system_cpu_usage_percent",
-    "System CPU usage percentage",
-)
+try:
+    system_cpu_usage_percent = Gauge(
+        "system_cpu_usage_percent",
+        "System CPU usage percentage",
+    )
+except ValueError:
+    pass
 
-system_memory_usage_bytes = Gauge(
-    "system_memory_usage_bytes",
-    "System memory usage in bytes",
-)
+try:
+    system_memory_usage_bytes = Gauge(
+        "system_memory_usage_bytes",
+        "System memory usage in bytes",
+    )
+except ValueError:
+    pass
 
-system_memory_available_bytes = Gauge(
-    "system_memory_available_bytes",
-    "System available memory in bytes",
-)
+try:
+    system_memory_available_bytes = Gauge(
+        "system_memory_available_bytes",
+        "System available memory in bytes",
+    )
+except ValueError:
+    pass
 
-system_disk_usage_percent = Gauge(
-    "system_disk_usage_percent",
-    "System disk usage percentage",
-    ["path"],
-)
+try:
+    system_disk_usage_percent = Gauge(
+        "system_disk_usage_percent",
+        "System disk usage percentage",
+        ["path"],
+    )
+except ValueError:
+    pass
 
 # WebSocket Metrics
-websocket_connections_active = Gauge(
-    "websocket_connections_active",
-    "Number of active WebSocket connections",
-)
+try:
+    websocket_connections_active = Gauge(
+        "websocket_connections_active",
+        "Number of active WebSocket connections",
+    )
+except ValueError:
+    pass
 
-websocket_messages_total = Counter(
-    "websocket_messages_total",
-    "Total WebSocket messages",
-    ["direction", "message_type"],
-)
+try:
+    websocket_messages_total = Counter(
+        "websocket_messages_total",
+        "Total WebSocket messages",
+        ["direction", "message_type"],
+    )
+except ValueError:
+    pass
 
 
 # ============================================

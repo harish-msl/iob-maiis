@@ -1,11 +1,10 @@
 "use client";
 
 import React, { useRef, useState } from "react";
-import { Send, Paperclip, X, Loader2, Mic, StopCircle } from "lucide-react";
-import { Button } from "@/components/ui/Button";
+import { Send, Paperclip, X, Loader2, Mic } from "lucide-react";
+import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils/cn";
 import { VoiceControls } from "@/components/voice";
-import type { FileAttachment } from "@/lib/types/chat";
 
 interface ChatInputProps {
   onSendMessage: (message: string, files?: File[]) => void;

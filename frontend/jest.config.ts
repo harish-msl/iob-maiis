@@ -44,7 +44,7 @@ const config: Config = {
     '!src/app/**', // Next.js app directory routes
   ],
 
-  coverageThresholds: {
+  coverageThreshold: {
     global: {
       branches: 70,
       functions: 70,

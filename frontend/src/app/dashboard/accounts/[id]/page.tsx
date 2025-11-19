@@ -16,28 +16,26 @@ import {
 } from 'lucide-react';
 import { TransactionTable } from '@/components/banking/TransactionTable';
 import { TransferForm } from '@/components/banking/TransferForm';
-import { Button } from '@/components/ui/Button';
-import { Card } from '@/components/ui/Card';
-import { Badge } from '@/components/ui/Badge';
+import { Button } from '@/components/ui/button';
+import { Card } from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
-} from '@/components/ui/DropdownMenu';
+} from '@/components/ui/dropdown-menu';
 import { useBankingStore } from '@/store/banking-store';
 import { apiClient } from '@/lib/api/client';
 import { cn } from '@/lib/utils/cn';
 import { formatCurrency, formatDate } from '@/lib/utils/format';
-import type { Transaction } from '@/lib/types/banking';
 
 export default function AccountDetailPage() {
   const router = useRouter();
   const params = useParams();
   const accountId = params.id as string;
 
-  const { accounts, fetchAccounts, fetchAccountTransactions } = useBankingStore();
-  const [transactions, setTransactions] = useState<Transaction[]>([]);
+  const { accounts, transactions, fetchAccounts, fetchAccountTransactions } = useBankingStore();
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [showTransferForm, setShowTransferForm] = useState(false);
@@ -56,8 +54,7 @@ export default function AccountDetailPage() {
         }
 
         // Fetch transactions
-        const txData = await fetchAccountTransactions(accountId);
-        setTransactions(txData);
+        await fetchAccountTransactions(accountId);
       } catch (err: any) {
         setError(err.message || 'Failed to load account details');
       } finally {
@@ -80,11 +77,10 @@ export default function AccountDetailPage() {
 
   const handleTransfer = async (data: any) => {
     try {
-      await apiClient.banking.transfer(data);
+      await apiClient.createTransfer(data);
       // Refresh data
       await fetchAccounts();
-      const txData = await fetchAccountTransactions(accountId);
-      setTransactions(txData);
+        await fetchAccountTransactions(accountId);
       setShowTransferForm(false);
     } catch (err: any) {
       throw new Error(err.response?.data?.detail || 'Transfer failed');
@@ -137,12 +133,11 @@ export default function AccountDetailPage() {
     }
   };
 
-  const recentTransactions = transactions.slice(0, 5);
   const totalIncome = transactions
-    .filter((tx) => tx.transaction_type === 'deposit' || tx.transaction_type === 'credit')
+    .filter((tx) => tx.type === 'credit')
     .reduce((sum, tx) => sum + tx.amount, 0);
   const totalExpenses = transactions
-    .filter((tx) => tx.transaction_type === 'withdrawal' || tx.transaction_type === 'debit')
+    .filter((tx) => tx.type === 'debit')
     .reduce((sum, tx) => sum + Math.abs(tx.amount), 0);
 
   return (
@@ -194,7 +189,7 @@ export default function AccountDetailPage() {
           <div className="mb-6 flex items-start justify-between">
             <div>
               <div className="mb-2 flex items-center gap-3">
-                <h1 className="text-3xl font-bold">{account.account_name}</h1>
+                <h1 className="text-3xl font-bold">{account.account_number}</h1>
                 <Badge>{account.account_type}</Badge>
                 <Badge variant={account.status === 'active' ? 'default' : 'secondary'}>
                   {account.status}
@@ -236,12 +231,6 @@ export default function AccountDetailPage() {
                 <span className="text-xl text-muted-foreground">{account.currency}</span>
               )}
             </div>
-            {account.available_balance !== undefined &&
-              account.available_balance !== account.balance && (
-                <p className="mt-2 text-sm text-muted-foreground">
-                  Available: {balanceVisible ? formatCurrency(account.available_balance) : '••••••'}
-                </p>
-              )}
           </div>
 
           {/* Quick Stats */}

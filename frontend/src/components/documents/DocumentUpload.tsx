@@ -1,7 +1,7 @@
-'use client';
+"use client";
 
-import React, { useState, useCallback } from 'react';
-import { useDropzone } from 'react-dropzone';
+import React, { useState, useCallback } from "react";
+import { useDropzone } from "react-dropzone";
 import {
   Upload,
   File,
@@ -12,17 +12,17 @@ import {
   CheckCircle2,
   AlertCircle,
   Loader2,
-} from 'lucide-react';
-import { Card } from '@/components/ui/Card';
-import { Button } from '@/components/ui/Button';
-import { Badge } from '@/components/ui/Badge';
-import { cn } from '@/lib/utils/cn';
+} from "lucide-react";
+import { Card } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { cn } from "@/lib/utils/cn";
 
 interface UploadedFile {
   file: File;
   id: string;
   progress: number;
-  status: 'pending' | 'uploading' | 'success' | 'error';
+  status: "pending" | "uploading" | "success" | "error";
   error?: string;
   documentId?: string;
 }
@@ -33,24 +33,28 @@ interface DocumentUploadProps {
   onFileError?: (fileId: string, error: string) => void;
   maxFiles?: number;
   maxSize?: number; // in MB
-  acceptedTypes?: string[];
+  acceptedTypes?: Record<string, string[]>;
   className?: string;
 }
 
 const DEFAULT_ACCEPTED_TYPES = {
-  'application/pdf': ['.pdf'],
-  'image/*': ['.png', '.jpg', '.jpeg', '.gif', '.webp'],
-  'application/msword': ['.doc'],
-  'application/vnd.openxmlformats-officedocument.wordprocessingml.document': ['.docx'],
-  'application/vnd.ms-excel': ['.xls'],
-  'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet': ['.xlsx'],
-  'text/plain': ['.txt'],
+  "application/pdf": [".pdf"],
+  "image/*": [".png", ".jpg", ".jpeg", ".gif", ".webp"],
+  "application/msword": [".doc"],
+  "application/vnd.openxmlformats-officedocument.wordprocessingml.document": [
+    ".docx",
+  ],
+  "application/vnd.ms-excel": [".xls"],
+  "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet": [
+    ".xlsx",
+  ],
+  "text/plain": [".txt"],
 };
 
 export function DocumentUpload({
   onUpload,
-  onFileComplete,
-  onFileError,
+  onFileComplete: _onFileComplete,
+  onFileError: _onFileError,
   maxFiles = 10,
   maxSize = 50, // 50MB default
   acceptedTypes,
@@ -64,7 +68,9 @@ export function DocumentUpload({
       // Check max files limit
       const totalFiles = uploadedFiles.length + acceptedFiles.length;
       if (totalFiles > maxFiles) {
-        alert(`Maximum ${maxFiles} files allowed. You can only upload ${maxFiles - uploadedFiles.length} more.`);
+        alert(
+          `Maximum ${maxFiles} files allowed. You can only upload ${maxFiles - uploadedFiles.length} more.`,
+        );
         return;
       }
 
@@ -73,7 +79,7 @@ export function DocumentUpload({
         file,
         id: `${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
         progress: 0,
-        status: 'pending' as const,
+        status: "pending" as const,
       }));
 
       setUploadedFiles((prev) => [...prev, ...newFiles]);
@@ -87,32 +93,33 @@ export function DocumentUpload({
         setUploadedFiles((prev) =>
           prev.map((f) =>
             newFiles.find((nf) => nf.id === f.id)
-              ? { ...f, status: 'success' as const, progress: 100 }
-              : f
-          )
+              ? { ...f, status: "success" as const, progress: 100 }
+              : f,
+          ),
         );
       } catch (error: any) {
         // Update files to error
         setUploadedFiles((prev) =>
           prev.map((f) =>
             newFiles.find((nf) => nf.id === f.id)
-              ? { ...f, status: 'error' as const, error: error.message }
-              : f
-          )
+              ? { ...f, status: "error" as const, error: error.message }
+              : f,
+          ),
         );
       } finally {
         setIsUploading(false);
       }
     },
-    [uploadedFiles.length, maxFiles, onUpload]
+    [uploadedFiles.length, maxFiles, onUpload],
   );
 
-  const { getRootProps, getInputProps, isDragActive, fileRejections } = useDropzone({
-    onDrop,
-    accept: acceptedTypes || DEFAULT_ACCEPTED_TYPES,
-    maxSize: maxSize * 1024 * 1024, // Convert MB to bytes
-    disabled: isUploading,
-  });
+  const { getRootProps, getInputProps, isDragActive, fileRejections } =
+    useDropzone({
+      onDrop,
+      accept: acceptedTypes || DEFAULT_ACCEPTED_TYPES,
+      maxSize: maxSize * 1024 * 1024, // Convert MB to bytes
+      disabled: isUploading,
+    });
 
   const removeFile = (fileId: string) => {
     setUploadedFiles((prev) => prev.filter((f) => f.id !== fileId));
@@ -127,18 +134,30 @@ export function DocumentUpload({
     if (!fileToRetry) return;
 
     setUploadedFiles((prev) =>
-      prev.map((f) => (f.id === fileId ? { ...f, status: 'pending' as const, error: undefined } : f))
+      prev.map((f) =>
+        f.id === fileId
+          ? { ...f, status: "pending" as const, error: undefined }
+          : f,
+      ),
     );
 
     setIsUploading(true);
     try {
       await onUpload([fileToRetry.file]);
       setUploadedFiles((prev) =>
-        prev.map((f) => (f.id === fileId ? { ...f, status: 'success' as const, progress: 100 } : f))
+        prev.map((f) =>
+          f.id === fileId
+            ? { ...f, status: "success" as const, progress: 100 }
+            : f,
+        ),
       );
     } catch (error: any) {
       setUploadedFiles((prev) =>
-        prev.map((f) => (f.id === fileId ? { ...f, status: 'error' as const, error: error.message } : f))
+        prev.map((f) =>
+          f.id === fileId
+            ? { ...f, status: "error" as const, error: error.message }
+            : f,
+        ),
       );
     } finally {
       setIsUploading(false);
@@ -146,21 +165,21 @@ export function DocumentUpload({
   };
 
   const getFileIcon = (fileName: string) => {
-    const ext = fileName.split('.').pop()?.toLowerCase();
+    const ext = fileName.split(".").pop()?.toLowerCase();
     switch (ext) {
-      case 'pdf':
+      case "pdf":
         return <FileText className="h-8 w-8 text-red-500" />;
-      case 'doc':
-      case 'docx':
+      case "doc":
+      case "docx":
         return <FileText className="h-8 w-8 text-blue-500" />;
-      case 'xls':
-      case 'xlsx':
+      case "xls":
+      case "xlsx":
         return <FileSpreadsheet className="h-8 w-8 text-green-500" />;
-      case 'png':
-      case 'jpg':
-      case 'jpeg':
-      case 'gif':
-      case 'webp':
+      case "png":
+      case "jpg":
+      case "jpeg":
+      case "gif":
+      case "webp":
         return <Image className="h-8 w-8 text-purple-500" />;
       default:
         return <File className="h-8 w-8 text-gray-500" />;
@@ -168,33 +187,44 @@ export function DocumentUpload({
   };
 
   const formatFileSize = (bytes: number): string => {
-    if (bytes === 0) return '0 Bytes';
+    if (bytes === 0) return "0 Bytes";
     const k = 1024;
-    const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+    const sizes = ["Bytes", "KB", "MB", "GB"];
     const i = Math.floor(Math.log(bytes) / Math.log(k));
-    return Math.round(bytes / Math.pow(k, i) * 100) / 100 + ' ' + sizes[i];
+    return Math.round((bytes / Math.pow(k, i)) * 100) / 100 + " " + sizes[i];
   };
 
-  const successCount = uploadedFiles.filter((f) => f.status === 'success').length;
-  const errorCount = uploadedFiles.filter((f) => f.status === 'error').length;
-  const pendingCount = uploadedFiles.filter((f) => f.status === 'pending' || f.status === 'uploading').length;
+  const successCount = uploadedFiles.filter(
+    (f) => f.status === "success",
+  ).length;
+  const errorCount = uploadedFiles.filter((f) => f.status === "error").length;
+  const pendingCount = uploadedFiles.filter(
+    (f) => f.status === "pending" || f.status === "uploading",
+  ).length;
 
   return (
-    <div className={cn('space-y-4', className)}>
+    <div className={cn("space-y-4", className)}>
       {/* Upload Dropzone */}
       <Card
         {...getRootProps()}
         className={cn(
-          'cursor-pointer border-2 border-dashed p-12 text-center transition-all',
-          isDragActive && 'border-primary bg-primary/5',
-          isUploading && 'pointer-events-none opacity-50',
-          !isDragActive && !isUploading && 'hover:border-primary hover:bg-muted/50'
+          "cursor-pointer border-2 border-dashed p-12 text-center transition-all",
+          isDragActive && "border-primary bg-primary/5",
+          isUploading && "pointer-events-none opacity-50",
+          !isDragActive &&
+            !isUploading &&
+            "hover:border-primary hover:bg-muted/50",
         )}
       >
         <input {...getInputProps()} />
         <div className="mx-auto flex max-w-md flex-col items-center gap-4">
           <div className="flex h-16 w-16 items-center justify-center rounded-full bg-primary/10">
-            <Upload className={cn('h-8 w-8 text-primary', isDragActive && 'animate-bounce')} />
+            <Upload
+              className={cn(
+                "h-8 w-8 text-primary",
+                isDragActive && "animate-bounce",
+              )}
+            />
           </div>
           {isDragActive ? (
             <div>
@@ -204,7 +234,9 @@ export function DocumentUpload({
           ) : (
             <div>
               <p className="text-lg font-semibold">Drag & drop files here</p>
-              <p className="text-sm text-muted-foreground">or click to browse</p>
+              <p className="text-sm text-muted-foreground">
+                or click to browse
+              </p>
             </div>
           )}
           <div className="text-xs text-muted-foreground">
@@ -221,12 +253,14 @@ export function DocumentUpload({
           <div className="flex items-start gap-2">
             <AlertCircle className="h-5 w-5 shrink-0 text-destructive" />
             <div className="flex-1">
-              <p className="font-semibold text-destructive">Some files were rejected:</p>
+              <p className="font-semibold text-destructive">
+                Some files were rejected:
+              </p>
               <ul className="mt-2 space-y-1 text-sm text-destructive">
                 {fileRejections.map(({ file, errors }) => (
                   <li key={file.name}>
-                    <span className="font-medium">{file.name}</span>:{' '}
-                    {errors.map((e) => e.message).join(', ')}
+                    <span className="font-medium">{file.name}</span>:{" "}
+                    {errors.map((e) => e.message).join(", ")}
                   </li>
                 ))}
               </ul>
@@ -241,7 +275,7 @@ export function DocumentUpload({
           <div className="flex items-center gap-4">
             <div className="text-sm">
               <span className="font-semibold">{uploadedFiles.length}</span> file
-              {uploadedFiles.length !== 1 ? 's' : ''}
+              {uploadedFiles.length !== 1 ? "s" : ""}
             </div>
             {successCount > 0 && (
               <Badge variant="default" className="gap-1">
@@ -250,7 +284,10 @@ export function DocumentUpload({
               </Badge>
             )}
             {errorCount > 0 && (
-              <Badge variant="outline" className="gap-1 border-destructive text-destructive">
+              <Badge
+                variant="outline"
+                className="gap-1 border-destructive text-destructive"
+              >
                 <AlertCircle className="h-3 w-3" />
                 {errorCount} failed
               </Badge>
@@ -262,7 +299,12 @@ export function DocumentUpload({
               </Badge>
             )}
           </div>
-          <Button variant="ghost" size="sm" onClick={clearAll} disabled={isUploading}>
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={clearAll}
+            disabled={isUploading}
+          >
             Clear All
           </Button>
         </div>
@@ -275,25 +317,30 @@ export function DocumentUpload({
             <Card
               key={uploadedFile.id}
               className={cn(
-                'p-4 transition-all',
-                uploadedFile.status === 'error' && 'border-destructive/50 bg-destructive/5'
+                "p-4 transition-all",
+                uploadedFile.status === "error" &&
+                  "border-destructive/50 bg-destructive/5",
               )}
             >
               <div className="flex items-center gap-4">
                 {/* File Icon */}
-                <div className="shrink-0">{getFileIcon(uploadedFile.file.name)}</div>
+                <div className="shrink-0">
+                  {getFileIcon(uploadedFile.file.name)}
+                </div>
 
                 {/* File Info */}
                 <div className="min-w-0 flex-1">
                   <div className="flex items-center gap-2">
-                    <p className="truncate font-medium">{uploadedFile.file.name}</p>
-                    {uploadedFile.status === 'success' && (
+                    <p className="truncate font-medium">
+                      {uploadedFile.file.name}
+                    </p>
+                    {uploadedFile.status === "success" && (
                       <CheckCircle2 className="h-4 w-4 shrink-0 text-green-500" />
                     )}
-                    {uploadedFile.status === 'error' && (
+                    {uploadedFile.status === "error" && (
                       <AlertCircle className="h-4 w-4 shrink-0 text-destructive" />
                     )}
-                    {uploadedFile.status === 'uploading' && (
+                    {uploadedFile.status === "uploading" && (
                       <Loader2 className="h-4 w-4 shrink-0 animate-spin text-primary" />
                     )}
                   </div>
@@ -302,12 +349,15 @@ export function DocumentUpload({
                   </p>
 
                   {/* Error Message */}
-                  {uploadedFile.status === 'error' && uploadedFile.error && (
-                    <p className="mt-1 text-sm text-destructive">{uploadedFile.error}</p>
+                  {uploadedFile.status === "error" && uploadedFile.error && (
+                    <p className="mt-1 text-sm text-destructive">
+                      {uploadedFile.error}
+                    </p>
                   )}
 
                   {/* Progress Bar */}
-                  {(uploadedFile.status === 'uploading' || uploadedFile.status === 'pending') && (
+                  {(uploadedFile.status === "uploading" ||
+                    uploadedFile.status === "pending") && (
                     <div className="mt-2 h-1.5 w-full overflow-hidden rounded-full bg-muted">
                       <div
                         className="h-full bg-primary transition-all duration-300"
@@ -319,7 +369,7 @@ export function DocumentUpload({
 
                 {/* Actions */}
                 <div className="flex shrink-0 items-center gap-2">
-                  {uploadedFile.status === 'error' && (
+                  {uploadedFile.status === "error" && (
                     <Button
                       variant="ghost"
                       size="sm"
@@ -329,7 +379,7 @@ export function DocumentUpload({
                       Retry
                     </Button>
                   )}
-                  {uploadedFile.status !== 'uploading' && (
+                  {uploadedFile.status !== "uploading" && (
                     <button
                       onClick={() => removeFile(uploadedFile.id)}
                       className="rounded p-1 hover:bg-muted"

@@ -43,6 +43,30 @@ class ChatMessage(BaseModel):
     }
 
 
+class IngestRequest(BaseModel):
+    """Request schema for document ingestion"""
+
+    text: str = Field(..., description="Document text to ingest")
+    metadata: Optional[Dict[str, Any]] = Field(
+        None, description="Optional metadata (type, category, etc.)"
+    )
+    chunk_size: int = Field(500, description="Chunk size in characters")
+    chunk_overlap: int = Field(50, description="Overlap between chunks")
+
+    model_config = {
+        "json_schema_extra": {
+            "examples": [
+                {
+                    "text": "Long policy document about loans...",
+                    "metadata": {"type": "policy", "category": "loans"},
+                    "chunk_size": 500,
+                    "chunk_overlap": 50,
+                }
+            ]
+        }
+    }
+
+
 class ChatRequest(BaseModel):
     """Chat request with message and optional context"""
 
@@ -451,12 +475,7 @@ async def check_health() -> Dict[str, Any]:
 
 @router.post("/ingest")
 async def ingest_document(
-    text: str = Field(..., description="Document text to ingest"),
-    metadata: Optional[Dict[str, Any]] = Field(
-        None, description="Optional metadata (type, category, etc.)"
-    ),
-    chunk_size: int = Field(500, description="Chunk size in characters"),
-    chunk_overlap: int = Field(50, description="Overlap between chunks"),
+    request: IngestRequest,
     current_user: User = Depends(get_current_active_user),
 ) -> Dict[str, Any]:
     """
@@ -466,10 +485,7 @@ async def ingest_document(
     to the vector database.
 
     Args:
-        text: Document text
-        metadata: Optional metadata
-        chunk_size: Size of text chunks
-        chunk_overlap: Overlap between chunks
+        request: Document ingestion request
         current_user: Authenticated user (must be admin)
 
     Returns:
@@ -480,7 +496,9 @@ async def ingest_document(
         POST /api/chat/ingest
         {
             "text": "Long policy document about loans...",
-            "metadata": {"type": "policy", "category": "loans"}
+            "metadata": {"type": "policy", "category": "loans"},
+            "chunk_size": 500,
+            "chunk_overlap": 50
         }
         ```
     """
@@ -498,11 +516,11 @@ async def ingest_document(
         rag_service = get_rag_service()
 
         # Ingest document
-        doc_ids = await rag_service.ingest_document(
-            text=text,
-            metadata=metadata,
-            chunk_size=chunk_size,
-            chunk_overlap=chunk_overlap,
+        result = await rag_service.ingest_document(
+            text=request.text,
+            metadata=request.metadata or {},
+            chunk_size=request.chunk_size,
+            chunk_overlap=request.chunk_overlap,
         )
 
         return {

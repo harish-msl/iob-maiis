@@ -1,15 +1,15 @@
-'use client';
+"use client";
 
-import React, { useState } from 'react';
-import { ArrowRight, Loader2, AlertCircle, CheckCircle2 } from 'lucide-react';
-import { Card } from '@/components/ui/Card';
-import { Input } from '@/components/ui/Input';
-import { Label } from '@/components/ui/Label';
-import { Button } from '@/components/ui/Button';
-import { Badge } from '@/components/ui/Badge';
-import { cn } from '@/lib/utils/cn';
-import { formatCurrency } from '@/lib/utils/format';
-import type { Account } from '@/lib/types/banking';
+import React, { useState } from "react";
+import { ArrowRight, Loader2, AlertCircle, CheckCircle2 } from "lucide-react";
+import { Card } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { cn } from "@/lib/utils/cn";
+import { formatCurrency } from "@/lib/utils/format";
+import type { Account } from "@/lib/types/banking";
 
 interface TransferFormProps {
   accounts: Account[];
@@ -33,10 +33,10 @@ export function TransferForm({
   onCancel,
   className,
 }: TransferFormProps) {
-  const [fromAccount, setFromAccount] = useState(fromAccountId || '');
-  const [toAccount, setToAccount] = useState('');
-  const [amount, setAmount] = useState('');
-  const [description, setDescription] = useState('');
+  const [fromAccount, setFromAccount] = useState(fromAccountId || "");
+  const [toAccount, setToAccount] = useState("");
+  const [amount, setAmount] = useState("");
+  const [description, setDescription] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
@@ -45,11 +45,11 @@ export function TransferForm({
   const selectedToAccount = accounts.find((acc) => acc.id === toAccount);
 
   const availableFromAccounts = accounts.filter(
-    (acc) => acc.status === 'active' && acc.account_type !== 'credit'
+    (acc) => acc.status === "active" && acc.account_type !== "credit",
   );
 
   const availableToAccounts = accounts.filter(
-    (acc) => acc.status === 'active' && acc.id !== fromAccount
+    (acc) => acc.status === "active" && acc.id !== fromAccount,
   );
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -58,23 +58,23 @@ export function TransferForm({
 
     // Validation
     if (!fromAccount || !toAccount) {
-      setError('Please select both accounts');
+      setError("Please select both accounts");
       return;
     }
 
     if (fromAccount === toAccount) {
-      setError('Cannot transfer to the same account');
+      setError("Cannot transfer to the same account");
       return;
     }
 
     const transferAmount = parseFloat(amount);
     if (isNaN(transferAmount) || transferAmount <= 0) {
-      setError('Please enter a valid amount');
+      setError("Please enter a valid amount");
       return;
     }
 
     if (selectedFromAccount && transferAmount > selectedFromAccount.balance) {
-      setError('Insufficient funds');
+      setError("Insufficient funds");
       return;
     }
 
@@ -92,14 +92,14 @@ export function TransferForm({
 
       // Reset form after 2 seconds
       setTimeout(() => {
-        setFromAccount(fromAccountId || '');
-        setToAccount('');
-        setAmount('');
-        setDescription('');
+        setFromAccount(fromAccountId || "");
+        setToAccount("");
+        setAmount("");
+        setDescription("");
         setSuccess(false);
       }, 2000);
     } catch (err: any) {
-      setError(err.message || 'Transfer failed. Please try again.');
+      setError(err.message || "Transfer failed. Please try again.");
     } finally {
       setIsSubmitting(false);
     }
@@ -108,7 +108,7 @@ export function TransferForm({
   const handleAmountChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value;
     // Allow only numbers and decimal point
-    if (value === '' || /^\d*\.?\d*$/.test(value)) {
+    if (value === "" || /^\d*\.?\d*$/.test(value)) {
       setAmount(value);
     }
   };
@@ -122,20 +122,21 @@ export function TransferForm({
 
   if (success) {
     return (
-      <Card className={cn('p-8 text-center', className)}>
+      <Card className={cn("p-8 text-center", className)}>
         <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-green-500/10">
           <CheckCircle2 className="h-8 w-8 text-green-500" />
         </div>
         <h3 className="mb-2 text-xl font-semibold">Transfer Successful!</h3>
         <p className="mb-4 text-sm text-muted-foreground">
-          {formatCurrency(parseFloat(amount))} has been transferred successfully.
+          {formatCurrency(parseFloat(amount))} has been transferred
+          successfully.
         </p>
       </Card>
     );
   }
 
   return (
-    <Card className={cn('p-6', className)}>
+    <Card className={cn("p-6", className)}>
       <form onSubmit={handleSubmit} className="space-y-6">
         {/* Header */}
         <div>
@@ -159,14 +160,18 @@ export function TransferForm({
             <option value="">Select source account</option>
             {availableFromAccounts.map((account) => (
               <option key={account.id} value={account.id}>
-                {account.account_name} - {formatCurrency(account.balance)}
+                {account.account_type.toUpperCase()} (
+                {account.account_number.slice(-4)}) -{" "}
+                {formatCurrency(account.balance)}
               </option>
             ))}
           </select>
           {selectedFromAccount && (
             <div className="flex items-center justify-between rounded-lg border bg-muted/50 p-3">
               <div>
-                <p className="text-sm font-medium">{selectedFromAccount.account_name}</p>
+                <p className="text-sm font-medium">
+                  {selectedFromAccount.account_type.toUpperCase()}
+                </p>
                 <p className="text-xs text-muted-foreground">
                   •••• {selectedFromAccount.account_number.slice(-4)}
                 </p>
@@ -202,19 +207,25 @@ export function TransferForm({
             <option value="">Select destination account</option>
             {availableToAccounts.map((account) => (
               <option key={account.id} value={account.id}>
-                {account.account_name} - {account.account_type}
+                {account.account_type.toUpperCase()} (
+                {account.account_number.slice(-4)}) -{" "}
+                {formatCurrency(account.balance)}
               </option>
             ))}
           </select>
           {selectedToAccount && (
             <div className="flex items-center justify-between rounded-lg border bg-muted/50 p-3">
               <div>
-                <p className="text-sm font-medium">{selectedToAccount.account_name}</p>
+                <p className="text-sm font-medium">
+                  {selectedToAccount.account_type.toUpperCase()}
+                </p>
                 <p className="text-xs text-muted-foreground">
                   •••• {selectedToAccount.account_number.slice(-4)}
                 </p>
               </div>
-              <Badge variant="secondary">{selectedToAccount.account_type}</Badge>
+              <Badge variant="secondary">
+                {selectedToAccount.account_type}
+              </Badge>
             </div>
           )}
         </div>
@@ -305,11 +316,15 @@ export function TransferForm({
             <div className="space-y-1 text-sm">
               <div className="flex justify-between">
                 <span className="text-muted-foreground">From:</span>
-                <span className="font-medium">{selectedFromAccount?.account_name}</span>
+                <span className="font-medium">
+                  {selectedFromAccount?.account_type.toUpperCase()}
+                </span>
               </div>
               <div className="flex justify-between">
                 <span className="text-muted-foreground">To:</span>
-                <span className="font-medium">{selectedToAccount?.account_name}</span>
+                <span className="font-medium">
+                  {selectedToAccount?.account_type.toUpperCase()}
+                </span>
               </div>
               <div className="flex justify-between border-t pt-2">
                 <span className="text-muted-foreground">Amount:</span>
@@ -353,9 +368,7 @@ export function TransferForm({
                 Processing...
               </>
             ) : (
-              <>
-                Transfer {amount && formatCurrency(parseFloat(amount))}
-              </>
+              <>Transfer {amount && formatCurrency(parseFloat(amount))}</>
             )}
           </Button>
         </div>

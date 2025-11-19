@@ -18,7 +18,15 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.middleware.gzip import GZipMiddleware
 from fastapi.middleware.trustedhost import TrustedHostMiddleware
 from fastapi.responses import JSONResponse
-from prometheus_client import CONTENT_TYPE_LATEST, Counter, Histogram, generate_latest
+
+# Prometheus metrics - handle reload gracefully by checking if already registered
+from prometheus_client import (
+    CONTENT_TYPE_LATEST,
+    REGISTRY,
+    Counter,
+    Histogram,
+    generate_latest,
+)
 from starlette.exceptions import HTTPException as StarletteHTTPException
 from starlette.responses import Response
 
@@ -33,21 +41,76 @@ from app.core.sentry import init_sentry
 from app.db.session import Base, engine, init_db
 from app.middleware.monitoring import setup_monitoring
 
-# Prometheus metrics
-REQUEST_COUNT = Counter(
+
+def _get_or_create_counter(name, description, labelnames=None):
+    """Get existing counter from registry or create new one"""
+    # Check if metric already exists in registry
+    for collector in list(REGISTRY._collector_to_names.keys()):
+        names = REGISTRY._collector_to_names.get(collector, set())
+        if name in names or f"{name}_total" in names or f"{name}_created" in names:
+            return collector
+    try:
+        return Counter(name, description, labelnames or [])
+    except ValueError:
+        # Already registered, find and return it
+        for collector in list(REGISTRY._collector_to_names.keys()):
+            names = REGISTRY._collector_to_names.get(collector, set())
+            if name in names or f"{name}_total" in names:
+                return collector
+
+        # Fallback: create a dummy counter that does nothing
+        class DummyCounter:
+            def labels(self, *args, **kwargs):
+                return self
+
+            def inc(self, *args, **kwargs):
+                pass
+
+        return DummyCounter()
+
+
+def _get_or_create_histogram(name, description, labelnames=None, buckets=None):
+    """Get existing histogram from registry or create new one"""
+    # Check if metric already exists in registry
+    for collector in list(REGISTRY._collector_to_names.keys()):
+        names = REGISTRY._collector_to_names.get(collector, set())
+        if name in names or f"{name}_bucket" in names or f"{name}_count" in names:
+            return collector
+    try:
+        kwargs = {"buckets": buckets} if buckets else {}
+        return Histogram(name, description, labelnames or [], **kwargs)
+    except ValueError:
+        # Already registered, find and return it
+        for collector in list(REGISTRY._collector_to_names.keys()):
+            names = REGISTRY._collector_to_names.get(collector, set())
+            if name in names or f"{name}_bucket" in names:
+                return collector
+
+        # Fallback: create a dummy histogram that does nothing
+        class DummyHistogram:
+            def labels(self, *args, **kwargs):
+                return self
+
+            def observe(self, *args, **kwargs):
+                pass
+
+        return DummyHistogram()
+
+
+REQUEST_COUNT = _get_or_create_counter(
     "http_requests_total", "Total HTTP requests", ["method", "endpoint", "status"]
 )
 
-REQUEST_LATENCY = Histogram(
+REQUEST_LATENCY = _get_or_create_histogram(
     "http_request_duration_seconds",
     "HTTP request latency",
     ["method", "endpoint"],
     buckets=[0.01, 0.05, 0.1, 0.5, 1.0, 2.5, 5.0, 10.0],
 )
 
-ACTIVE_REQUESTS = Counter("http_requests_active", "Active HTTP requests")
+ACTIVE_REQUESTS = _get_or_create_counter("http_requests_active", "Active HTTP requests")
 
-ERROR_COUNT = Counter(
+ERROR_COUNT = _get_or_create_counter(
     "http_errors_total", "Total HTTP errors", ["method", "endpoint", "error_type"]
 )
 
@@ -107,8 +170,9 @@ async def lifespan(app: FastAPI):
 
         # Test Qdrant connection
         logger.info("🔗 Testing Qdrant connection...")
-        from app.services.embedding_service import embedding_service
+        from app.services.embedding_service import get_embedding_service
 
+        embedding_service = get_embedding_service()
         await embedding_service.initialize()
         logger.info("✅ Qdrant connection established")
 
@@ -364,7 +428,7 @@ async def general_exception_handler(request: Request, exc: Exception):
 
 
 # Include API routers
-app.include_router(auth_router, prefix="/api", tags=["🔐 Authentication"])
+app.include_router(auth_router, prefix="/api/auth", tags=["🔐 Authentication"])
 app.include_router(chat_router, prefix="/api", tags=["💬 AI Chat"])
 app.include_router(banking_router, prefix="/api", tags=["🏦 Banking"])
 app.include_router(documents_router, prefix="/api", tags=["📄 Documents"])

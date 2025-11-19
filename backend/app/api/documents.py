@@ -5,7 +5,7 @@ Handles document upload, OCR processing, and knowledge base ingestion
 
 import io
 from datetime import datetime
-from typing import List, Optional
+from typing import Any, Dict, List, Optional
 
 from fastapi import (
     APIRouter,

@@ -16,8 +16,7 @@ import {
   Legend,
   ResponsiveContainer,
 } from 'recharts';
-import { Card } from '@/components/ui/Card';
-import { Badge } from '@/components/ui/Badge';
+import { Card } from '@/components/ui/card';
 import { cn } from '@/lib/utils/cn';
 import { formatCurrency } from '@/lib/utils/format';
 import type { Transaction } from '@/lib/types/banking';
@@ -51,7 +50,7 @@ export function TransactionChart({
     // Sort transactions by date
     const sorted = [...transactions].sort(
       (a, b) =>
-        new Date(a.transaction_date).getTime() - new Date(b.transaction_date).getTime()
+        new Date(a.created_at).getTime() - new Date(b.created_at).getTime()
     );
 
     // Get date range
@@ -74,13 +73,13 @@ export function TransactionChart({
 
     // Filter transactions within range
     const filtered = sorted.filter(
-      (tx) => new Date(tx.transaction_date) >= startDate
+      (tx) => new Date(tx.created_at) >= startDate
     );
 
     if (type === 'pie') {
       // Group by transaction type for pie chart
       const grouped = filtered.reduce((acc, tx) => {
-        const type = tx.transaction_type;
+        const type = tx.type;
         if (!acc[type]) {
           acc[type] = 0;
         }
@@ -96,7 +95,7 @@ export function TransactionChart({
 
     // Group by date for area/bar charts
     const grouped = filtered.reduce((acc, tx) => {
-      const date = new Date(tx.transaction_date).toLocaleDateString('en-US', {
+      const date = new Date(tx.created_at).toLocaleDateString('en-US', {
         month: 'short',
         day: 'numeric',
       });
@@ -105,10 +104,7 @@ export function TransactionChart({
         acc[date] = { date, income: 0, expense: 0 };
       }
 
-      if (
-        tx.transaction_type === 'deposit' ||
-        tx.transaction_type === 'credit'
-      ) {
+      if (tx.type === 'credit') {
         acc[date].income += tx.amount;
       } else {
         acc[date].expense += Math.abs(tx.amount);
@@ -125,7 +121,7 @@ export function TransactionChart({
       transactions
         .filter(
           (tx) =>
-            tx.transaction_type === 'deposit' || tx.transaction_type === 'credit'
+            tx.type === 'credit'
         )
         .reduce((sum, tx) => sum + tx.amount, 0),
     [transactions]
@@ -136,7 +132,7 @@ export function TransactionChart({
       transactions
         .filter(
           (tx) =>
-            tx.transaction_type === 'withdrawal' || tx.transaction_type === 'debit'
+            tx.type === 'debit'
         )
         .reduce((sum, tx) => sum + Math.abs(tx.amount), 0),
     [transactions]
@@ -313,7 +309,7 @@ export function TransactionChart({
                 fill="#8884d8"
                 dataKey="value"
               >
-                {chartData.map((entry, index) => (
+                {chartData.map((_, index) => (
                   <Cell key={`cell-${index}`} fill={PIE_COLORS[index % PIE_COLORS.length]} />
                 ))}
               </Pie>
@@ -327,13 +323,13 @@ export function TransactionChart({
       {type === 'pie' && (
         <div className="mt-6 flex flex-wrap justify-center gap-4">
           {chartData.map((entry, index) => (
-            <div key={entry.name} className="flex items-center gap-2">
+            <div key={index} className="flex items-center gap-2">
               <div
                 className="h-3 w-3 rounded-sm"
                 style={{ backgroundColor: PIE_COLORS[index % PIE_COLORS.length] }}
               />
               <span className="text-sm">
-                {entry.name}: {formatCurrency(entry.value)}
+                {('name' in entry) ? entry.name : ''}:  {formatCurrency(('value' in entry) ? entry.value : 0)}
               </span>
             </div>
           ))}
